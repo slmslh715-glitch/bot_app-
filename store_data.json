@@ -1,0 +1,8 @@
+{
+    "products": [
+        {"name": "Phone", "price": 35000},
+        {"name": "Watch", "price": 8000}
+    ],
+    "delivery": "58 wilayas",
+    "payment": "COD"
+}

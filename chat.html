@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">    
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Store Bot</title>
+        <style>
+            body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+            #chat {width: 420px; background: white; margin: 0 auto; padding: 15px; border-radius: 10px; height: 400px; overflow-y: auto; border: 1px solid #ddd; }
+            .msg { padding: 8px 12px; margin: 8px 0; border-radius: 12px; max-width: 80%; word-wrap: break-word; }
+            .user { background: #dcf8c6; margin-left: auto; text-align: right; }
+            .bot { background: #eee; margin-right: auto; }
+            .input-area { width: 420px; margin: 15px auto; display: flex; gap: 5px; }
+            input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ccc; }
+            button { padding: 10px 15px; border-radius: 8px; border: none; background: #25D366; color: white; cursor: pointer; }
+        </style>
+        </head>
+        <body>
+
+            <div id="chat"></div>
+
+            <div class="input-area">
+                <input id="input" placeholder="Type a message...">
+                <button onclick="send()">send</button>
+            </div>
+
+            <script>
+                async function send(){
+                    let text = document.getElementById('input').value;
+                    let chat = document.getElementById('chat');
+                let res = await fetch('/chat', { 
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({message: text})}
+                )
+
+                    let data = await res.json();
+                    chat.innerHTML += `<div class="msg bot">${data.reply}</div>`;
+                    chat.scrollTop = chat.scrollHeight;
+                }
+                    document.getElementById('input').addEventListener ('keypress', function(e){
+                        if(e.key === 'Enter'){
+                         send();
+                        }
+                    });
+            </script>
+        </body>
