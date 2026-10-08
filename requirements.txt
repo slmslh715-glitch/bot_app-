@@ -4,3 +4,4 @@ gunicorn
 google-genai
 requests
 PyPDF2
+numpy
