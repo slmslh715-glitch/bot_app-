@@ -1,4 +1,5 @@
 import os 
+import requests
 from dotenv import load_dotenv 
 load_dotenv()
 
@@ -19,6 +20,11 @@ from features import CURRENT_TIER_FEATURES
 app = Flask(__name__)
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
+
+VERIFY_TOKEN = "bot123"
+WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN")
+PHONE_ID = os.environ.get("PHONE_ID")
+
 
 if not API_KEY:
     raise ValueError("set GEMINI_API_KEY in CMD")
@@ -108,6 +114,34 @@ def activate():
 def status():
     expiry = get_expiry()
     return jsonify({"expiry": expiry.isoformat(), "expired": is_expired()})
+    
+    @app.route('/webhook/whatsapp', methods=['GET'])
+def verify_whatsapp():
+    if request.args.get("hub.verify_token") == VERIFY_TOKEN:
+        return request.args.get("hub.challenge")
+    return "fail", 403
+
+@app.route('/webhook/whatsapp', methods=['POST'])
+def receive_whatsapp():
+    data = request.get_json()
+    try:
+        msg = data['entry'][0]['changes'][0]['value']['messages'][0]['text']['body']
+        num = data['entry'][0]['changes'][0]['value']['messages'][0]['from']
+
+        if is_expired():
+            reply = "Trail ended. Contact admin for activation."
+        else:
+            try: context = RAG_DB.search(msg, top_k=3)
+            except: context = ""
+            history_text = "\n".join(chat_history[-6:])
+            full_prompt = f"Chat history:\n{history_text}\n\nContext from catalogue:\n{context}\n\nUser: {msg}"
+            response = client.models.generate_content(model="gemini-flash-latest", contents=full_prompt, config=config)
+            reply = response.text.replace("**", "").replace("*", "").strip()
+
+        requests.post(f"https://graph.facebook.com/v20.0/{PHONE_ID}/messages", headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"}, json={"messaging_product": "whatsapp", "to": num, "text": {"body": reply}})
+    except Exception as e:
+        print(e)
+    return "ok", 200
 
 if __name__ == "__main__":
     import os
