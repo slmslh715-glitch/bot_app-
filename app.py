@@ -115,7 +115,7 @@ def status():
     expiry = get_expiry()
     return jsonify({"expiry": expiry.isoformat(), "expired": is_expired()})
     
-    @app.route('/webhook/whatsapp', methods=['GET'])
+@app.route('/webhook/whatsapp', methods=['GET'])
 def verify_whatsapp():
     if request.args.get("hub.verify_token") == VERIFY_TOKEN:
         return request.args.get("hub.challenge")
