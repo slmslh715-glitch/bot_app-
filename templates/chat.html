@@ -3,33 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Bot & Onboarding</title>
+    <title>WhatsApp Bot Setup & Chat</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; text-align: center; }
         .container { max-width: 450px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .btn-whatsapp { background-color: #25D366; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 20px; }
-        .btn-whatsapp:hover { background-color: #1ebe5d; }
+        .setup-box { margin-bottom: 20px; text-align: left; }
+        .setup-box input { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .btn-save { background-color: #25D366; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+        .btn-save:hover { background-color: #1ebe5d; }
         hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
-        #chat { width: 100%; background: #f9f9f9; padding: 10px; border-radius: 8px; height: 300px; overflow-y: auto; border: 1px solid #ddd; text-align: left; margin-bottom: 10px; box-sizing: border-box; }
+        #chat { width: 100%; background: #f9f9f9; padding: 10px; border-radius: 8px; height: 250px; overflow-y: auto; border: 1px solid #ddd; text-align: left; margin-bottom: 10px; box-sizing: border-box; }
         .msg { padding: 8px 12px; margin: 6px 0; border-radius: 8px; max-width: 80%; word-wrap: break-word; }
         .user { background: #dcf8c6; margin-left: auto; text-align: right; }
         .bot { background: #eee; }
         .input-area { display: flex; gap: 5px; }
-        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
+        .input-area input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
         button.send-btn { padding: 10px 15px; border-radius: 6px; border: none; background: #007bff; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>WhatsApp Bot Setup & Chat</h2>
+        <h2>WhatsApp Bot Setup</h2>
         
-        <!-- WhatsApp Embedded Signup Button -->
-        <button class="btn-whatsapp" onclick="launchWhatsAppSignup()">Connect WhatsApp 🚀</button>
+        <!-- Manual Setup Form -->
+        <div class="setup-box">
+            <label for="phoneId"><strong>WhatsApp Phone Number ID:</strong></label>
+            <input type="text" id="phoneId" placeholder="e.g. 106543219876543">
+            
+            <label for="token"><strong>Permanent Access Token:</strong></label>
+            <input type="password" id="token" placeholder="Paste your Meta Access Token">
+            
+            <button class="btn-save" onclick="saveConfig()">Save & Activate Bot 🚀</button>
+        </div>
         
         <hr>
 
         <!-- Chat Interface -->
+        <h3>Live Chat Preview</h3>
         <div id="chat"></div>
         <div class="input-area">
             <input id="input" placeholder="Type a message...">
@@ -38,39 +49,29 @@
     </div>
 
     <script>
-      // Meta SDK Initialization
-      window.fbAsyncInit = function() {
-        FB.init({
-          appId: 'YOUR_FB_APP_ID',
-          cookie: true,
-          xfbml: true,
-          version: 'v18.0'
-        });
-      };
+      async function saveConfig() {
+        let phoneId = document.getElementById('phoneId').value;
+        let token = document.getElementById('token').value;
+        
+        if(!phoneId || !token) {
+          alert('Please fill in both fields!');
+          return;
+        }
 
-      function launchWhatsAppSignup() {
-        FB.login(function(response) {
-          if (response.authResponse) {
-            const code = response.authResponse.code;
-            fetch('/auth/whatsapp/callback?code=' + code)
-              .then(res => res.json())
-              .then(data => {
-                if(data.success) {
-                  alert('Store successfully connected and bot activated!');
-                } else {
-                  alert('Connection failed, please try again.');
-                }
-              });
-          }
-        }, {
-          config_id: 'YOUR_CONFIG_ID',
-          response_type: 'code',
-          override_default_response_type: true,
-          extras: { "feature": "whatsapp_business_app_onboarding" }
+        let response = await fetch('/save-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneId: phoneId, token: token })
         });
+        
+        let data = await response.json();
+        if(data.success) {
+          alert('Bot activated successfully!');
+        } else {
+          alert('Failed to save configuration.');
+        }
       }
 
-      // Chat Message Handler
       async function sendMessage() {
         let inputField = document.getElementById('input');
         let text = inputField.value;
@@ -82,6 +83,5 @@
         chat.scrollTop = chat.scrollHeight;
       }
     </script>
-    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
 </body>
 </html>
