@@ -128,6 +128,42 @@ def status():
     expiry = get_expiry()
     return jsonify({"expiry": expiry.isoformat(), "expired": is_expired()})
 
+@app.route("/save-config", methods=["POST"])
+def save_config():
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({"success": False, "error": "No data provided"}), 400
+
+        phone_id = data.get("phoneId")
+        token = data.get("token")
+
+        if not phone_id or not token:
+            return jsonify({"success": False, "error": "Missing fields"}), 400
+
+        clients = load_clients()
+
+        existing_client = None
+        for c in clients:
+            if str(c.get("phone_id")) == str(phone_id):
+                existing_client = c
+                break
+
+        if existing_client:
+            existing_client["whatsapp_token"] = token
+        else:
+            clients.append({
+                "phone_id": phone_id,
+                "whatsapp_token": token,
+                "store_name": "My Store",
+                "expiry": (datetime.now() + timedelta(days=30)).isoformat()
+            })
+
+        save_clients(clients)
+        return jsonify({"success": True, "message": "Configuration saved successfully!"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
 @app.route('/webhook/whatsapp', methods=['GET'])
 def verify_whatsapp():
     if request.args.get("hub.verify_token") == VERIFY_TOKEN:
