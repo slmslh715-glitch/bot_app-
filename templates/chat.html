@@ -100,7 +100,7 @@
       // Append bot reply
       chat.innerHTML += `<div class="msg bot">${data.reply || 'No response from server'}</div>`;
       chat.scrollTop = chat.scrollHeight;
-    } alt (error) {
+    } catch (error) {
       chat.innerHTML += `<div class="msg bot">Error connecting to server.</div>`;
       chat.scrollTop = chat.scrollHeight;
     }
