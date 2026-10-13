@@ -48,7 +48,7 @@
         </div>
     </div>
 
-    <script>
+   <script>
       async function saveConfig() {
         let phoneId = document.getElementById('phoneId').value;
         let token = document.getElementById('token').value;
@@ -81,6 +81,19 @@
         chat.innerHTML += `<div class="msg user">${text}</div>`;
         inputField.value = '';
         chat.scrollTop = chat.scrollHeight;
+
+        try {
+          let response = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+          });
+          let data = await response.json();
+          chat.innerHTML += `<div class="msg bot">${data.reply}</div>`;
+          chat.scrollTop = chat.scrollHeight;
+        } catch (error) {
+          chat.innerHTML += `<div class="msg bot">Error connecting to server.</div>`;
+        }
       }
     </script>
 </body>
