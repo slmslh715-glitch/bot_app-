@@ -105,7 +105,7 @@ def chat():
     history_text = "\n".join(chat_histories["web_user"][-6:])
     full_prompt = f"Chat history:\n{history_text}\n\nContext from catalogue:\n{context}\n\nUser: {msg}"
     
-    response = client.models.generate_content(model="gemini-2.5-flash", contents=full_prompt, config=config)
+    response = client.models.generate_content(model="gemini-1.5-flash", contents=full_prompt, config=config)
     clean_reply = response.text.replace("**", "").replace("*", "").strip()
     
     chat_histories["web_user"].append(f"User: {msg}")
