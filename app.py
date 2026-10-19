@@ -7,6 +7,10 @@ from flask import Flask, jsonify, request, render_template
 from google import genai
 from google.genai import types
 from datetime import datetime, timedelta
+
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import google.genai.errors
+
 from rag_strong import build_or_load_db
 from features import CURRENT_TIER_FEATURES
 
