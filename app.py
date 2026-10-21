@@ -69,7 +69,7 @@ def save_expiry(date):
 
 def get_expiry():
     if not os.path.exists(FILE):
-        expiry = datetime.now() + timedelta(days=3)
+        expiry = datetime.now() + timedelta(days=12)
         save_expiry(expiry)
         return expiry
     with open(FILE, "r") as f: data = json.load(f)
