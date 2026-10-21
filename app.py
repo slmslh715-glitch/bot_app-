@@ -36,6 +36,15 @@ def get_client_rag(phone_id):
     return rag_dbs[phone_id]
 
 client = genai.Client(api_key=API_KEY)
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=8),
+    retry=retry_if_exception_type(google.genai.errors.ServerError),
+    reraise=True
+)
+def safe_generate_content(model_name, contents, config):
+    return client.models.generate_content(model=model_name, contents=contents, config=config)
+
 chat_histories = {}
 
 FILE = "subscription.json"
@@ -109,8 +118,12 @@ def chat():
     history_text = "\n".join(chat_histories["web_user"][-6:])
     full_prompt = f"Chat history:\n{history_text}\n\nContext from catalogue:\n{context}\n\nUser: {msg}"
     
-    response = client.models.generate_content(model="gemini-flash-latest", contents=full_prompt, config=config)
-    clean_reply = response.text.replace("**", "").replace("*", "").strip()
+    try:
+        response = safe_generate_content("gemini-flash-latest", full_prompt, config)
+        clean_reply = response.text.replace("**", "").replace("*", "").strip()
+    except Exception as e:
+        clean_reply = "Sorry, the system is currently experiencing high traffic 🔄. Please resend your message in a few moments."
+    
     
     chat_histories["web_user"].append(f"User: {msg}")
     chat_histories["web_user"].append(f"Bot: {clean_reply}")
@@ -211,8 +224,12 @@ def receive_whatsapp():
             history_text = "\n".join(chat_histories[num][-6:])
             full_prompt = f"Chat history:\n{history_text}\n\nContext from catalogue:\n{context}\n\nUser: {msg}"
             
-            response = client.models.generate_content(model="gemini-2.5-flash", contents=full_prompt, config=config)
-            reply = response.text.replace("**", "").replace("*", "").strip()
+
+            try:
+                response = safe_generate_content("gemini-flash-latest", full_prompt, config)
+                reply = response.text.replace("**", "").replace("*", "").strip()
+            except Exception as e:
+                reply = "Sorry, the system is currently experiencing high traffic 🔄. Please resend your message in a few moments."
             
             chat_histories[num].append(f"User: {msg}")
             chat_histories[num].append(f"Bot: {reply}")
