@@ -109,7 +109,7 @@ def chat():
     system_instruction = f"You are a sales assistant. Store: {json.dumps(store)}"
     config = types.GenerateContentConfig(system_instruction=system_instruction, temperature=0.3)
     
-        context = ""
+    context = ""
         
     history_text = "\n".join(chat_histories["web_user"][-6:])
     full_prompt = f"Chat history:\n{history_text}\n\nContext from catalogue:\n{context}\n\nUser: {msg}"
