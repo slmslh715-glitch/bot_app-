@@ -233,7 +233,7 @@ def receive_whatsapp():
             
 
             try:
-                response = safe_generate_content(,"gemini-2.0-flash" full_prompt, config)
+                response = safe_generate_content(,"gemini-2.0-flash", full_prompt, config)
                 reply = response.text.replace("**", "").replace("*", "").strip()
             except Exception as e:
                 reply = "Sorry, the system is currently experiencing high traffic 🔄. Please resend your message in a few moments."
