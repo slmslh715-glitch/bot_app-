@@ -90,43 +90,54 @@ def load_store_data(phone_id=None):
         with open(store_file, "r", encoding="utf-8") as f: return json.load(f)
     except: return {"products": [], "delivery": "58 wilaya", "payment": "COD"}
 
+
+
 @app.route("/")
-def home(): return render_template("chat.html")
+def home(): 
+    return render_template("chat.html")
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    if is_expired(): return jsonify({"reply": "Trail ended. Contact admin for activation."})
-    data = request.get_json(silent=True)
-    if not data: return jsonify({"reply": "Please send a message."})
-    msg = data.get("message", "").strip()
-    if not msg: return jsonify({"reply": "Please send a message."})
-    
-    global chat_histories
-    if "web_user" not in chat_histories:
-        chat_histories["web_user"] = []
-    
-    store = load_store_data()
-    system_instruction = f"You are a sales assistant. Store: {json.dumps(store)}"
-    config = types.GenerateContentConfig(system_instruction=system_instruction, temperature=0.3)
-    
-    context = ""
-        
-    history_text = "\n".join(chat_histories["web_user"][-6:])
-    full_prompt = f"Chat history:\n{history_text}\n\nContext from catalogue:\n{context}\n\nUser: {msg}"
-    
     try:
+        if is_expired(): 
+            return jsonify({"reply": "Trial ended. Contact admin for activation."})
+            
+        data = request.get_json(silent=True)
+        if not data: 
+            return jsonify({"reply": "Please send a message."})
+            
+        msg = data.get("message", "").strip()
+        if not msg: 
+            return jsonify({"reply": "Please send a message."})
+        
+        global chat_histories
+        if "web_user" not in chat_histories:
+            chat_histories["web_user"] = []
+        
+        store = load_store_data()
+        system_instruction = f"You are a sales assistant. Store: {json.dumps(store)}"
+        config = types.GenerateContentConfig(system_instruction=system_instruction, temperature=0.3)
+        
+        
+        context = ""
+        
+        history_text = "\n".join(chat_histories["web_user"][-6:])
+        full_prompt = f"Chat history:\n{history_text}\n\nContext from catalogue:\n{context}\n\nUser: {msg}"
+        
+       
         response = safe_generate_content("gemini-flash-latest", full_prompt, config)
         clean_reply = response.text.replace("**", "").replace("*", "").strip()
-    except Exception as e:
-        clean_reply = "Sorry, the system is currently experiencing high traffic 🔄. Please resend your message in a few moments."
-    
-    
-    chat_histories["web_user"].append(f"User: {msg}")
-    chat_histories["web_user"].append(f"Bot: {clean_reply}")
-    if len(chat_histories["web_user"]) > 20: 
-        chat_histories["web_user"] = chat_histories["web_user"][-20:]
         
-    return jsonify({"reply": clean_reply})
+        chat_histories["web_user"].append(f"User: {msg}")
+        chat_histories["web_user"].append(f"Bot: {clean_reply}")
+        if len(chat_histories["web_user"]) > 20: 
+            chat_histories["web_user"] = chat_histories["web_user"][-20:]
+            
+        return jsonify({"reply": clean_reply})
+        
+    except Exception as e:
+         
+        return jsonify({"reply": f"Error details: {str(e)}"})
 
 @app.route("/activate", methods=["POST"])
 def activate():
