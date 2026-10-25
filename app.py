@@ -109,10 +109,6 @@ def chat():
     system_instruction = f"You are a sales assistant. Store: {json.dumps(store)}"
     config = types.GenerateContentConfig(system_instruction=system_instruction, temperature=0.3)
     
-    try: 
-        rag_db = build_or_load_db("catalogue.pdf")
-        context = rag_db.search(msg, top_k=3)
-    except: 
         context = ""
         
     history_text = "\n".join(chat_histories["web_user"][-6:])
