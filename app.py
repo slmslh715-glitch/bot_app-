@@ -125,7 +125,7 @@ def chat():
         full_prompt = f"Chat history:\n{history_text}\n\nContext from catalogue:\n{context}\n\nUser: {msg}"
         
        
-        response = safe_generate_content("gemini-1.5-flash", full_prompt, config)
+        response = safe_generate_content("gemini-flash", full_prompt, config)
         clean_reply = response.text.replace("**", "").replace("*", "").strip()
         
         chat_histories["web_user"].append(f"User: {msg}")
@@ -233,7 +233,7 @@ def receive_whatsapp():
             
 
             try:
-                response = safe_generate_content("gemini-1.5-flash", full_prompt, config)
+                response = safe_generate_content("gemini-flash", full_prompt, config)
                 reply = response.text.replace("**", "").replace("*", "").strip()
             except Exception as e:
                 reply = "Sorry, the system is currently experiencing high traffic 🔄. Please resend your message in a few moments."
