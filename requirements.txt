@@ -6,3 +6,4 @@ requests
 PyPDF2
 numpy
 scikit-learn
+tenacity
