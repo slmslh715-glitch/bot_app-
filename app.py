@@ -48,6 +48,7 @@ chat_histories = {}
 rag_dbs = {}
 
 MAX_HISTORY = 20
+MAX_CONVERSATIONS = 500  # سقف عدد المحادثات في الذاكرة (لحماية السيرفر الضعيف)
 HISTORY_IN_PROMPT = 6
 
 
@@ -215,6 +216,8 @@ def build_reply(history_key, msg, phone_id=None):
     reply = reply.replace("**", "").replace("*", "").strip()
 
     with history_lock:
+        if history_key not in chat_histories and len(chat_histories) >= MAX_CONVERSATIONS:
+            chat_histories.pop(next(iter(chat_histories)))
         h = chat_histories.setdefault(history_key, [])
         h.append(f"User: {msg}")
         h.append(f"Bot: {reply}")
@@ -249,7 +252,8 @@ def chat():
         if not msg:
             return jsonify({"reply": "Please send a message."})
 
-        reply = build_reply("web_user", msg)
+        sid = str((data or {}).get("session_id", ""))[:64] or "anon"
+        reply = build_reply(f"web:{sid}", msg)
         return jsonify({"reply": reply})
     except Exception:
         log.exception("/chat failed")
@@ -347,7 +351,7 @@ def receive_whatsapp():
     try:
         value = data["entry"][0]["changes"][0]["value"]
         messages = value.get("messages")
-        if not messages:  #إشعارات الحالة (تم التسليم/القراءة) تُتجاهل
+        if not messages:  # إشعارات الحالة (تم التسليم/القراءة) تُتجاهل
             return "ok", 200
 
         message = messages[0]
