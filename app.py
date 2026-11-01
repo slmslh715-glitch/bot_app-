@@ -14,6 +14,8 @@ import google.genai.errors
 from rag_strong import build_or_load_db
 from features import CURRENT_TIER_FEATURES
 
+ENABLE_PDF_RAG = False
+
 app = Flask(__name__)
 API_KEY = os.environ.get("GEMINI_API_KEY")
 VERIFY_TOKEN = "bot123"
@@ -120,6 +122,14 @@ def chat():
         
         
         context = ""
+        if ENABLE_PDF_RAG:
+            try:
+               
+                pass
+            except:
+                context = ""
+
+        
         
         history_text = "\n".join(chat_histories["web_user"][-6:])
         full_prompt = f"Chat history:\n{history_text}\n\nContext from catalogue:\n{context}\n\nUser: {msg}"
@@ -221,12 +231,14 @@ def receive_whatsapp():
             store = load_store_data(phone_id_real)
             system_instruction = f"You are a sales assistant. Store: {json.dumps(store)}"
             config = types.GenerateContentConfig(system_instruction=system_instruction, temperature=0.3)
-            
-            try: 
-                rag_db = get_client_rag(phone_id_real)
-                context = rag_db.search(msg, top_k=3)
-            except: 
-                context = ""
+
+            context = ""
+            if ENABLE_PDF_RAG:
+                try: 
+                    rag_db = get_client_rag(phone_id_real)
+                    context = rag_db.search(msg, top_k=3)
+                except: 
+                    context = ""
                 
             history_text = "\n".join(chat_histories[num][-6:])
             full_prompt = f"Chat history:\n{history_text}\n\nContext from catalogue:\n{context}\n\nUser: {msg}"
