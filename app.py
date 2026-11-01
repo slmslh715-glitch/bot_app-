@@ -4,17 +4,31 @@ import json
 from dotenv import load_dotenv
 load_dotenv()
 from flask import Flask, jsonify, request, render_template
-from google import genai
-from google.genai import types
 from datetime import datetime, timedelta
 
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-import google.genai.errors
 
 from rag_strong import build_or_load_db
 from features import CURRENT_TIER_FEATURES
 
 ENABLE_PDF_RAG = False
+
+def safe_generate_content(prompt, system_instruction=""):
+    api_key = os.environ.get("GEMINI_API_KEY")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    
+    headers = {"Content-Type": "application/json"}
+    data = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "system_instruction": {"parts": [{"text": system_instruction}]} if system_instruction else None
+    }
+    
+    response = requests.post(url, headers=headers, json=data)
+    if response.status_code == 200:
+        res_json = response.json()
+        return res_json["candidates"][0]["content"]["parts"][0]["text"]
+    else:
+        raise Exception(f"API Error: {response.text}")
 
 app = Flask(__name__)
 API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -133,8 +147,8 @@ def chat():
         full_prompt = f"Chat history:\n{history_text}\n\nContext from catalogue:\n{context}\n\nUser: {msg}"
         
        
-        response = safe_generate_content("gemini-1.5-flash", full_prompt, config)
-        clean_reply = response.text.replace("**", "").replace("*", "").strip()
+        clean_reply = safe_generate_content(full_prompt, system_instruction)
+        clean_reply = clean_reply.replace("**", "").replace("*", "").strip()
         
         chat_histories["web_user"].append(f"User: {msg}")
         chat_histories["web_user"].append(f"Bot: {clean_reply}")
@@ -243,8 +257,9 @@ def receive_whatsapp():
             
 
             try:
-                response = safe_generate_content("gemini-1.5-flash", full_prompt, config)
-                reply = response.text.replace("**", "").replace("*", "").strip()
+                reply = safe_generate_content(full_prompt, system_instruction)
+                reply = reply.replace("**", "").replace("*", "").strip()
+                
             except Exception as e:
                 reply = "Sorry, the system is currently experiencing high traffic 🔄. Please resend your message in a few moments."
             
