@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import time
 import hmac
@@ -50,6 +51,70 @@ rag_dbs = {}
 MAX_HISTORY = 20
 MAX_CONVERSATIONS = 500  # سقف عدد المحادثات في الذاكرة (لحماية السيرفر الضعيف)
 HISTORY_IN_PROMPT = 6
+
+# ---------------------------------------------------------------------------
+# كشف لغة الزبون (حتى لا يخلط البوت بين اللغات)
+# ---------------------------------------------------------------------------
+chat_langs = {}
+
+ARABIC_RE = re.compile(r"[\u0600-\u06FF]")
+TOKEN_RE = re.compile(r"[a-z\u00e0-\u00ff0-9']+")
+# رقم داخل الكلمة بين حروف (nb3at, kb3t) أو في أولها (3lach, 7abib)
+ARABIZI_DIGIT_RE = re.compile(r"^(?:[a-z]+[2356789][a-z]+|[2356789][a-z]{2,})")
+FRENCH_ACCENTS = set("\u00e9\u00e8\u00ea\u00eb\u00e0\u00e2\u00e7\u00f9\u00fb\u00f4\u00ee\u00ef")
+
+DARIJA_WORDS = {
+    "salam", "slm", "saha", "sahit", "wesh", "wach", "wech", "kifach", "kifah", "kayen",
+    "kayna", "kayn", "makach", "bezaf", "bzaf", "bezzaf", "chhal", "dok", "dork", "daba",
+    "rani", "rak", "raki", "nahb", "nheb", "hab", "habit", "hbit", "bghit", "bghina",
+    "afak", "mlih", "mliha", "khoya", "khouya", "yakhi", "ta3", "ghir", "barka", "tfadal",
+    "wella", "wla", "bach", "bech", "mazal", "wakha", "walo", "sah", "ey", "eyh",
+}
+FRENCH_WORDS = {
+    "bonjour", "bonsoir", "merci", "combien", "prix", "livraison", "je", "tu", "vous",
+    "nous", "est", "avec", "pour", "quel", "quelle", "quels", "disponible", "commande",
+    "commander", "svp", "voulez", "veux", "voudrais", "produit", "produits", "le", "la",
+    "les", "un", "une", "des", "du", "comment", "oui", "non", "quand", "payer", "paiement",
+    "salut", "bien", "aussi", "mais", "ou", "et", "dans", "sur", "ce", "cette",
+}
+ENGLISH_WORDS = {
+    "hello", "hi", "hey", "price", "how", "much", "what", "do", "you", "have", "is", "are",
+    "the", "delivery", "available", "order", "want", "buy", "please", "thanks", "thank",
+    "can", "my", "where", "which", "with", "for", "and", "this", "that", "cost", "need",
+}
+
+LANGUAGE_RULES = {
+    "ar": (
+        "Reply ONLY in Arabic script. If the customer uses Algerian Darija words, answer in "
+        "simple Algerian Darija written in Arabic script; otherwise answer in clear, simple "
+        "Arabic. Do not use Latin letters except for product names, brands and numbers."
+    ),
+    "darija_latin": (
+        "Reply ONLY in Algerian Darija written in Latin letters with numbers (Arabizi), the "
+        "same way the customer writes. Do NOT use Arabic script. Do NOT write full French "
+        "sentences; common loanwords such as prix, livraison, commande are fine."
+    ),
+    "fr": "Reply ONLY in French. Do not use Arabic script or Darija.",
+    "en": "Reply ONLY in English. Do not use Arabic script, Darija or French.",
+}
+
+
+def detect_language(text):
+    """يعيد ar أو darija_latin أو fr أو en، أو None إذا لم تكن الإشارة واضحة."""
+    if ARABIC_RE.search(text):
+        return "ar"
+    lowered = text.lower()
+    tokens = TOKEN_RE.findall(lowered)
+    if not tokens:
+        return None
+    if any(t in DARIJA_WORDS or ARABIZI_DIGIT_RE.match(t) for t in tokens):
+        return "darija_latin"
+    if any(ch in FRENCH_ACCENTS for ch in lowered) or any(t in FRENCH_WORDS for t in tokens):
+        return "fr"
+    if any(t in ENGLISH_WORDS for t in tokens):
+        return "en"
+    return None
+
 
 
 # ---------------------------------------------------------------------------
@@ -194,17 +259,18 @@ def get_catalogue_context(phone_id, msg):
 # ---------------------------------------------------------------------------
 def build_reply(history_key, msg, phone_id=None):
     store = load_store_data(phone_id)
+
+    with history_lock:
+        history = list(chat_histories.get(history_key, []))
+        lang = detect_language(msg) or chat_langs.get(history_key) or "ar"
+
     system_instruction = (
         "You are a sales assistant for this store. Answer only from the store data "
         "and the catalogue context. If the information is not available, say you will "
-        "check with the store. "
-        "LANGUAGE: mirror the customer's language, script and dialect in every reply. "
-        "If they write Algerian Arabic (Darija) in Latin letters with numbers (Arabizi, "
-        "for example '3lach', 'kb3t', 'saha', 'wesh'), reply in Algerian Darija written "
-        "in Latin letters in the same way. If they write in Arabic script, reply in Arabic "
-        "script using simple Algerian Darija or easy Arabic matching their level. "
-        "If they write French, reply in French. If they write English, reply in English. "
-        "Keep replies short, friendly and natural. "
+        "check with the store. Keep replies short, friendly and natural. "
+        f"LANGUAGE RULE (strict): {LANGUAGE_RULES[lang]} "
+        "Never mix languages or scripts in one reply. Follow only the language of the "
+        "customer's latest message and ignore the language used in your earlier replies. "
         "ORDERS: you cannot place or confirm orders yourself. Collect the customer's name, "
         "phone number, wilaya and address, then tell them the store team will contact them "
         "to confirm. Never say an order is confirmed or registered. "
@@ -212,9 +278,6 @@ def build_reply(history_key, msg, phone_id=None):
         f"Store: {json.dumps(store, ensure_ascii=False)}"
     )
     context = get_catalogue_context(phone_id, msg)
-
-    with history_lock:
-        history = list(chat_histories.get(history_key, []))
     history_text = "\n".join(history[-HISTORY_IN_PROMPT:])
 
     prompt = (
@@ -227,12 +290,15 @@ def build_reply(history_key, msg, phone_id=None):
 
     with history_lock:
         if history_key not in chat_histories and len(chat_histories) >= MAX_CONVERSATIONS:
-            chat_histories.pop(next(iter(chat_histories)))
+            evicted = next(iter(chat_histories))
+            chat_histories.pop(evicted)
+            chat_langs.pop(evicted, None)
         h = chat_histories.setdefault(history_key, [])
         h.append(f"User: {msg}")
         h.append(f"Bot: {reply}")
         if len(h) > MAX_HISTORY:
             chat_histories[history_key] = h[-MAX_HISTORY:]
+        chat_langs[history_key] = lang
     return reply
 
 
