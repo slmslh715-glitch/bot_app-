@@ -17,7 +17,7 @@ load_dotenv()
 # الإعدادات (كلها من متغيرات البيئة، لا أسرار داخل الكود)
 # ---------------------------------------------------------------------------
 API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
 ADMIN_KEY = os.environ.get("ADMIN_KEY")
 VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN")
 DEFAULT_WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN")
