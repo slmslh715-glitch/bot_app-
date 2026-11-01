@@ -1,7 +1,6 @@
 ﻿Flask==3.1.3
 python-dotenv
 gunicorn
-google-genai==0.3.0
 requests
 PyPDF2
 numpy
