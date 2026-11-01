@@ -1,8 +1,4 @@
-﻿Flask==3.1.3
-python-dotenv
-gunicorn
-requests
-PyPDF2
-numpy
-scikit-learn
-tenacity
+Flask==3.1.3
+python-dotenv>=1.0
+gunicorn>=22.0
+requests>=2.31
