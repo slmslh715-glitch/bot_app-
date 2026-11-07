@@ -35,29 +35,39 @@ psycopg2 = None
 # ---------------------------------------------------------------------------
 # enforced=True: يطبّقها الكود فعلاً. enforced=False: تُخزَّن كعلَم فقط حتى تُبنى الميزة نفسها.
 FEATURE_CATALOG = [
+    {"key": "memory", "label": "ذاكرة المحادثة",
+     "hint": "يتذكر البوت ما سأله الزبون سابقاً في المحادثة", "enforced": True},
     {"key": "save_chat", "label": "حفظ المحادثات",
-     "hint": "تُحفظ محادثات زبائن المشترك ويمكنك الاطلاع عليها من اللوحة", "enforced": True},
+     "hint": "تُحفظ محادثات الزبائن ويمكن الاطلاع عليها من اللوحة", "enforced": True},
     {"key": "pdf_rag", "label": "قراءة كتالوج PDF",
      "hint": "يجيب البوت من ملف الكتالوج (يتطلب تفعيل ENABLE_PDF_RAG)", "enforced": True},
-    {"key": "admin_panel", "label": "لوحة إدارة للمشترك",
-     "hint": "لوحة يعدّل منها المشترك بيانات متجره", "enforced": False},
-    {"key": "stats_page", "label": "صفحة الإحصائيات",
-     "hint": "إحصائيات الرسائل والزبائن للمشترك", "enforced": False},
-    {"key": "arabic_admin", "label": "واجهة إدارة بالعربية",
-     "hint": "تعريب لوحة المشترك", "enforced": False},
-    {"key": "custom_feature", "label": "ميزة مخصصة",
-     "hint": "ميزة خاصة تُبنى للمشترك", "enforced": False},
+    {"key": "human_handoff", "label": "تحويل الزبون إلى إنسان",
+     "hint": "ينبّه صاحب المتجر عندما يطلب الزبون التحدث إلى شخص", "enforced": False},
+    {"key": "order_log", "label": "تسجيل الطلبات",
+     "hint": "تُرتَّب الطلبات في ملف يمكن تصديره", "enforced": False},
+    {"key": "owner_notify", "label": "إشعار صاحب المتجر بالطلب",
+     "hint": "يصل الطلب المكتمل إلى صاحب المتجر مباشرة", "enforced": False},
+    {"key": "weekly_report", "label": "تقرير أسبوعي",
+     "hint": "عدد الزبائن والطلبات خلال الأسبوع", "enforced": False},
+    {"key": "merchant_dashboard", "label": "لوحة خاصة بالتاجر",
+     "hint": "لوحة يتابع منها التاجر بوته بنفسه", "enforced": False},
 ]
 FEATURE_KEYS = [f["key"] for f in FEATURE_CATALOG]
 
+# الأسعار بالدينار الجزائري. monthly_limit: عدد المحادثات (زبائن مختلفون) شهرياً، 0 = بلا حد.
 DEFAULT_PLANS = [
-    {"key": "starter", "name": "Starter", "features": []},
-    {"key": "business", "name": "Business", "features": ["save_chat", "admin_panel"]},
-    {"key": "premium", "name": "Premium",
-     "features": ["save_chat", "admin_panel", "stats_page", "arabic_admin"]},
-    {"key": "promax", "name": "Pro Max",
-     "features": ["save_chat", "admin_panel", "stats_page", "arabic_admin",
-                  "custom_feature", "pdf_rag"]},
+    {"key": "trial", "name": "تجريبية", "setup_fee": 15000, "price": 3500, "monthly_limit": 300,
+     "features": [], "active": True},
+    {"key": "basic", "name": "عادية", "setup_fee": 25000, "price": 6000, "monthly_limit": 1000,
+     "features": ["memory", "save_chat"], "active": True},
+    {"key": "pro", "name": "برو", "setup_fee": 35000, "price": 9000, "monthly_limit": 3000,
+     "features": ["memory", "save_chat", "pdf_rag"], "active": True},
+    {"key": "business", "name": "بزنس (قريباً)", "setup_fee": 50000, "price": 13000, "monthly_limit": 0,
+     "features": ["memory", "save_chat", "pdf_rag", "human_handoff", "order_log",
+                  "owner_notify", "weekly_report"], "active": False},
+    {"key": "vip", "name": "VIP (قريباً)", "setup_fee": 70000, "price": 20000, "monthly_limit": 0,
+     "features": ["memory", "save_chat", "pdf_rag", "human_handoff", "order_log",
+                  "owner_notify", "weekly_report", "merchant_dashboard"], "active": False},
 ]
 
 
@@ -223,6 +233,7 @@ def _schema():
         f"""CREATE TABLE IF NOT EXISTS plans (
             id {pk}, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL,
             price INTEGER NOT NULL DEFAULT 0, duration_days INTEGER NOT NULL DEFAULT 30,
+            setup_fee INTEGER NOT NULL DEFAULT 0, monthly_limit INTEGER NOT NULL DEFAULT 0,
             features TEXT NOT NULL DEFAULT '{{}}', sort_order INTEGER NOT NULL DEFAULT 0,
             is_active INTEGER NOT NULL DEFAULT 1)""",
         f"""CREATE TABLE IF NOT EXISTS clients (
@@ -244,10 +255,26 @@ def _schema():
             id {pk}, ts TEXT NOT NULL, action TEXT NOT NULL,
             target TEXT NOT NULL DEFAULT '', detail TEXT NOT NULL DEFAULT '')""",
         "CREATE TABLE IF NOT EXISTS settings (k TEXT PRIMARY KEY, v TEXT NOT NULL)",
+        """CREATE TABLE IF NOT EXISTS conversations (
+            client_id INTEGER NOT NULL, month TEXT NOT NULL, customer TEXT NOT NULL,
+            PRIMARY KEY (client_id, month, customer))""",
     ]
     with _tx() as tx:
         for s in stmts:
             tx.x(s)
+        _migrate(tx)
+
+
+def _migrate(tx):
+    """يضيف الأعمدة الجديدة إلى قواعد أُنشئت بإصدار أقدم."""
+    if backend == "postgres":
+        have = {r["column_name"] for r in tx.q(
+            "SELECT column_name FROM information_schema.columns WHERE table_name = 'plans'")}
+    else:
+        have = {r["name"] for r in tx.q("PRAGMA table_info(plans)")}
+    for col in ("setup_fee", "monthly_limit"):
+        if col not in have:
+            tx.x(f"ALTER TABLE plans ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0")
 
 
 # ---------------------------------------------------------------------------
@@ -295,15 +322,29 @@ def init(data_dir):
     _seed()
 
 
+def _insert_default_plans(tx, start=0):
+    for i, p in enumerate(DEFAULT_PLANS):
+        feats = {k: (k in p["features"]) for k in FEATURE_KEYS}
+        if tx.one("SELECT id FROM plans WHERE slug = ?", (p["key"],)):
+            continue
+        tx.x("INSERT INTO plans (slug, name, price, duration_days, setup_fee, monthly_limit, "
+             "features, sort_order, is_active) VALUES (?, ?, ?, 30, ?, ?, ?, ?, ?)",
+             (p["key"], p["name"], p["price"], p["setup_fee"], p["monthly_limit"],
+              json.dumps(feats), start + i, 1 if p["active"] else 0))
+
+
 def _seed():
     with _tx() as tx:
-        n_plans = tx.one("SELECT COUNT(*) AS n FROM plans")["n"]
-        if n_plans == 0:
-            for i, p in enumerate(DEFAULT_PLANS):
-                feats = {k: (k in p["features"]) for k in FEATURE_KEYS}
-                tx.x("INSERT INTO plans (slug, name, price, duration_days, features, sort_order, is_active) "
-                     "VALUES (?, ?, 0, 30, ?, ?, 1)", (p["key"], p["name"], json.dumps(feats), i))
+        v2_done = tx.one("SELECT k FROM settings WHERE k = 'plans_v2'")
+        if not v2_done:
+            # قاعدة جديدة أو قديمة بلا مشتركين: تُستبدل الباقات الافتراضية القديمة
+            if tx.one("SELECT COUNT(*) AS n FROM clients")["n"] == 0:
+                tx.x("DELETE FROM plans")
+            base = tx.one("SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM plans")["n"]
+            _insert_default_plans(tx, base)
         has_flag = tx.one("SELECT k FROM settings WHERE k = 'bot_enabled'")
+    if not v2_done:
+        set_setting("plans_v2", "1")
     if not has_flag:
         set_setting("bot_enabled", "1")
         set_setting("currency", "DZD")
@@ -378,7 +419,8 @@ def _plan_dict(r):
     feats = _loads(r["features"])
     return {
         "key": r["slug"], "name": r["name"], "price": r["price"],
-        "duration_days": r["duration_days"],
+        "duration_days": r["duration_days"], "setup_fee": r["setup_fee"],
+        "monthly_limit": r["monthly_limit"],
         "features": {k: bool(feats.get(k, False)) for k in FEATURE_KEYS},
         "sort_order": r["sort_order"], "is_active": bool(r["is_active"]),
     }
@@ -412,6 +454,8 @@ def save_plan(data):
         raise ValueError("اسم الباقة مطلوب")
     price = _int(data.get("price", 0), 0, 100_000_000, "السعر")
     duration = _int(data.get("duration_days", 30), 1, 3650, "مدة الباقة")
+    setup_fee = _int(data.get("setup_fee", 0), 0, 100_000_000, "رسم التركيب")
+    limit = _int(data.get("monthly_limit", 0), 0, 10_000_000, "حد المحادثات")
     raw = data.get("features") or {}
     feats = json.dumps({k: bool(raw.get(k, False)) for k in FEATURE_KEYS})
     is_active = 1 if data.get("is_active", True) else 0
@@ -419,13 +463,15 @@ def save_plan(data):
     with _tx() as tx:
         exists = tx.one("SELECT id FROM plans WHERE slug = ?", (key,))
         if exists:
-            tx.x("UPDATE plans SET name = ?, price = ?, duration_days = ?, features = ?, is_active = ? "
-                 "WHERE slug = ?", (name, price, duration, feats, is_active, key))
+            tx.x("UPDATE plans SET name = ?, price = ?, duration_days = ?, setup_fee = ?, "
+                 "monthly_limit = ?, features = ?, is_active = ? WHERE slug = ?",
+                 (name, price, duration, setup_fee, limit, feats, is_active, key))
             action = "تعديل باقة"
         else:
             nxt = tx.one("SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM plans")["n"]
-            tx.x("INSERT INTO plans (slug, name, price, duration_days, features, sort_order, is_active) "
-                 "VALUES (?, ?, ?, ?, ?, ?, ?)", (key, name, price, duration, feats, nxt, is_active))
+            tx.x("INSERT INTO plans (slug, name, price, duration_days, setup_fee, monthly_limit, "
+                 "features, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                 (key, name, price, duration, setup_fee, limit, feats, nxt, is_active))
             action = "إنشاء باقة"
     audit(action, key, f"{name} | {price} | {duration} يوم")
     return get_plan(key)
@@ -466,7 +512,37 @@ def _status(enabled, pending, expiry, now_):
     return "active"
 
 
-def _client_dict(r, plans_by_key, msgs7=0, secrets=False):
+def _month():
+    return now().strftime("%Y-%m")
+
+
+def _convs_month():
+    with _tx() as tx:
+        rows = tx.q("SELECT client_id, COUNT(*) AS n FROM conversations WHERE month = ? "
+                    "GROUP BY client_id", (_month(),))
+    return {r["client_id"]: int(r["n"]) for r in rows}
+
+
+def allow_conversation(client_id, customer, limit):
+    """يسجّل المحادثة (زبون مختلف في الشهر) ويُرجع False إن تجاوز المشترك حد باقته.
+    الزبون المسجّل سابقاً هذا الشهر يُسمح له دائماً."""
+    customer = str(customer)[:40]
+    with _tx() as tx:
+        known = tx.one("SELECT 1 AS x FROM conversations WHERE client_id = ? AND month = ? "
+                       "AND customer = ?", (client_id, _month(), customer))
+        if known:
+            return True
+        if limit and limit > 0:
+            n = tx.one("SELECT COUNT(*) AS n FROM conversations WHERE client_id = ? AND month = ?",
+                       (client_id, _month()))["n"]
+            if n >= limit:
+                return False
+        tx.x("INSERT INTO conversations (client_id, month, customer) VALUES (?, ?, ?)",
+             (client_id, _month(), customer))
+    return True
+
+
+def _client_dict(r, plans_by_key, msgs7=0, secrets=False, convs=0):
     now_ = now()
     expiry = _dt(r["expiry"])
     overrides = _loads(r["overrides"])
@@ -485,6 +561,7 @@ def _client_dict(r, plans_by_key, msgs7=0, secrets=False):
         "overrides": {k: v for k, v in overrides.items() if k in FEATURE_KEYS and isinstance(v, bool)},
         "features": _effective(plan, overrides),
         "notes": r["notes"], "messages_total": r["messages_total"], "messages_7d": msgs7,
+        "conversations_month": convs, "monthly_limit": plan["monthly_limit"] if plan else 0,
         "last_message_at": _iso(_dt(r["last_message_at"])),
         "last_error": r["last_error"], "last_error_at": _iso(_dt(r["last_error_at"])),
         "created_at": _iso(_dt(r["created_at"])),
@@ -510,6 +587,7 @@ def _usage_7d():
 def list_clients(q=None, status=None):
     pbk = _plans_by_key()
     usage = _usage_7d()
+    convs = _convs_month()
     sql, params = "SELECT * FROM clients", ()
     if q and q.strip():
         like = f"%{q.strip().lower()}%"
@@ -518,7 +596,7 @@ def list_clients(q=None, status=None):
     sql += " ORDER BY id DESC"
     with _tx() as tx:
         rows = tx.q(sql, params)
-    out = [_client_dict(r, pbk, usage.get(r["id"], 0)) for r in rows]
+    out = [_client_dict(r, pbk, usage.get(r["id"], 0), convs=convs.get(r["id"], 0)) for r in rows]
     if status and status != "all":
         out = [c for c in out if c["status"] == status]
     return out
@@ -529,7 +607,8 @@ def get_client(cid):
         r = tx.one("SELECT * FROM clients WHERE id = ?", (cid,))
     if not r:
         return None
-    return _client_dict(r, _plans_by_key(), _usage_7d().get(cid, 0))
+    return _client_dict(r, _plans_by_key(), _usage_7d().get(cid, 0),
+                        convs=_convs_month().get(cid, 0))
 
 
 def get_client_by_phone(phone_id):
@@ -552,7 +631,7 @@ def create_client(data):
     if len(gkey) > 300:
         raise ValueError("مفتاح Gemini غير صالح")
     pbk = _plans_by_key()
-    plan_key = data.get("plan_key") or (next(iter(pbk)) if pbk else "")
+    plan_key = data.get("plan_key") or next((k for k, p in pbk.items() if p["is_active"]), "")
     if plan_key not in pbk:
         raise ValueError("الباقة غير موجودة")
     pending = bool(data.get("pending", False))
@@ -663,6 +742,7 @@ def delete_client(cid):
             raise LookupError("المشترك غير موجود")
         tx.x("DELETE FROM usage_daily WHERE client_id = ?", (cid,))
         tx.x("DELETE FROM chats WHERE client_id = ?", (cid,))
+        tx.x("DELETE FROM conversations WHERE client_id = ?", (cid,))
         tx.x("DELETE FROM clients WHERE id = ?", (cid,))
     audit("حذف مشترك", cur["store_name"])
 
@@ -786,7 +866,7 @@ def import_legacy_clients(path):
             items = json.load(f)
     except (ValueError, OSError):
         return 0
-    first_plan = next(iter(_plans_by_key()), "starter")
+    first_plan = next(iter(_plans_by_key()), "trial")
     n = 0
     for c in items if isinstance(items, list) else []:
         try:
