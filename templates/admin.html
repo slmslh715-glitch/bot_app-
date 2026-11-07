@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>لوحة التحكم</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #12272B;
+  --ink-2: #1D3C42;
+  --paper: #EDF0EA;
+  --surface: #FFFFFF;
+  --line: #D6DDD2;
+  --line-2: #E5EAE1;
+  --text: #17262A;
+  --muted: #5B6D70;
+  --signal: #17A06A;
+  --signal-dark: #0D7A4D;
+  --amber: #D99A12;
+  --coral: #CF4A3A;
+  --slate: #7C8B90;
+  --r-sm: 6px;
+  --r-md: 10px;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif; color: var(--text); background: var(--paper); }
+body { margin: 0; font-size: 15px; line-height: 1.6; min-height: 100vh; font-variant-numeric: tabular-nums; }
+h1, h2, h3, p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid rgba(23,160,106,.55); outline-offset: 2px; }
+
+/* ---------- الدخول ---------- */
+.login { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--ink); }
+.login form { width: min(380px, 100%); background: var(--surface); border-radius: var(--r-md); padding: 32px 28px; display: grid; gap: 14px; }
+.login h1 { font-size: 24px; font-weight: 700; }
+.login p.sub { color: var(--muted); }
+.login .err { color: var(--coral); min-height: 1.6em; font-size: 14px; }
+
+/* ---------- الهيكل ---------- */
+.shell { display: grid; grid-template-columns: 224px 1fr; min-height: 100vh; }
+.side { background: var(--ink); color: #D8E3DF; padding: 22px 14px; display: flex; flex-direction: column; gap: 22px; position: sticky; top: 0; height: 100vh; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; font-weight: 700; font-size: 17px; color: #fff; }
+.brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 0 4px rgba(23,160,106,.2), 0 0 14px rgba(23,160,106,.8); }
+.nav { display: grid; gap: 4px; }
+.nav button { display: flex; align-items: center; gap: 10px; background: none; border: 0; color: inherit; padding: 10px 12px; border-radius: var(--r-sm); text-align: start; width: 100%; }
+.nav button svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.nav button:hover { background: rgba(255,255,255,.07); }
+.nav button[aria-current="page"] { background: var(--ink-2); color: #fff; box-shadow: inset -3px 0 0 var(--signal); }
+.side .spacer { flex: 1; }
+.side .logout { background: none; border: 1px solid rgba(255,255,255,.18); color: #D8E3DF; border-radius: var(--r-sm); padding: 8px 12px; }
+.side .logout:hover { background: rgba(255,255,255,.07); }
+
+main { padding: 28px 32px 56px; min-width: 0; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+.top h1 { font-size: 24px; font-weight: 700; }
+.top .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: var(--r-sm); margin-bottom: 18px; font-size: 14px; }
+.banner.warn { background: #FBF0D4; color: #6B4A00; border: 1px solid #EBD191; }
+.banner.danger { background: #FBE3DF; color: #7A2217; border: 1px solid #EDB6AD; }
+
+/* ---------- أزرار وحقول ---------- */
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-sm); padding: 8px 14px; font-weight: 500; }
+.btn:hover { background: #F6F8F4; }
+.btn.primary { background: var(--signal-dark); border-color: var(--signal-dark); color: #fff; }
+.btn.primary:hover { background: #0A6641; }
+.btn.danger { background: var(--coral); border-color: var(--coral); color: #fff; }
+.btn.danger:hover { background: #B83D2E; }
+.btn.ghost { background: transparent; }
+.btn.sm { padding: 4px 10px; font-size: 13px; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.in { width: 100%; border: 1px solid var(--line); background: #fff; border-radius: var(--r-sm); padding: 9px 12px; }
+.in:focus { border-color: var(--signal); outline: none; box-shadow: 0 0 0 3px rgba(23,160,106,.2); }
+.in[readonly] { background: #F3F5F0; color: var(--muted); }
+textarea.in { min-height: 76px; resize: vertical; }
+label.fld { display: grid; gap: 5px; font-weight: 500; font-size: 14px; }
+label.fld .hint, .hint { font-weight: 400; color: var(--muted); font-size: 13px; }
+
+.switch { position: relative; width: 46px; height: 26px; border-radius: 13px; border: 0; background: #B9C3C0; padding: 0; transition: background .18s; flex: none; }
+.switch::after { content: ""; position: absolute; top: 3px; inset-inline-start: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: inset-inline-start .18s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.switch[aria-checked="true"] { background: var(--signal); }
+.switch[aria-checked="true"]::after { inset-inline-start: 23px; }
+.switch:disabled { opacity: .5; cursor: wait; }
+
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 2px 10px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+.badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.badge.active { color: var(--signal-dark); background: #E1F3EA; }
+.badge.paused { color: #4A5A5F; background: #E4E9E8; }
+.badge.expired { color: #A23325; background: #FAE4E0; }
+.badge.pending { color: #7A5600; background: #FBF0D4; }
+.badge.warn { color: #7A5600; background: #FBF0D4; }
+.badge.warn::before { content: "!"; width: auto; height: auto; background: none; font-weight: 700; }
+
+/* ---------- لوحة المصابيح (العنصر المميّز) ---------- */
+.board { background: var(--ink); color: #D8E3DF; border-radius: var(--r-md); padding: 22px 24px 18px; margin-bottom: 26px; }
+.board-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.board-head h2 { font-size: 17px; font-weight: 600; color: #fff; }
+.board-head p { color: #9DB3AD; }
+.board-head p strong { color: #fff; font-size: 20px; font-weight: 700; margin-inline-end: 4px; }
+.lamps { display: flex; flex-wrap: wrap; gap: 12px; min-height: 22px; }
+.lamp { width: 20px; height: 20px; border-radius: 50%; border: 0; padding: 0; background: var(--slate); position: relative; }
+.lamp:hover, .lamp:focus-visible { transform: scale(1.25); }
+.lamp.active { background: var(--signal); box-shadow: 0 0 0 3px rgba(23,160,106,.2), 0 0 14px rgba(23,160,106,.75); }
+.lamp.expiring { background: var(--amber); box-shadow: 0 0 0 3px rgba(217,154,18,.2), 0 0 14px rgba(217,154,18,.7); }
+.lamp.paused { background: #52666B; }
+.lamp.expired { background: var(--coral); opacity: .8; }
+.lamp.pending { background: transparent; border: 2px dashed #9DB3AD; }
+.lamps.boot .lamp { animation: poweron .5s both; animation-delay: calc(min(var(--i), 40) * 35ms); }
+@keyframes poweron { from { opacity: .1; transform: scale(.5); } to { opacity: 1; transform: none; } }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.12); font-size: 13px; color: #9DB3AD; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.board .empty { color: #9DB3AD; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+/* ---------- شريط الأرقام ---------- */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); border-block: 1px solid var(--line); margin-bottom: 30px; }
+.stat { padding: 14px 16px; border-inline-end: 1px solid var(--line); }
+.stat:last-child { border-inline-end: 0; }
+.stat dt { color: var(--muted); font-size: 13px; }
+.stat dd { margin: 2px 0 0; font-size: 24px; font-weight: 700; }
+.stat dd small { font-size: 13px; font-weight: 500; color: var(--muted); margin-inline-start: 4px; }
+.stat.good dd { color: var(--signal-dark); }
+.stat.bad dd { color: var(--coral); }
+.stat.warn dd { color: #9A6B00; }
+
+.cols { display: grid; grid-template-columns: 1.5fr 1fr; gap: 36px; }
+.cols section h2, .sec h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+.chart { width: 100%; height: auto; display: block; }
+.bar { fill: #A9C9BD; }
+.bar.today { fill: var(--signal); }
+.bar-val { font-size: 11px; fill: var(--muted); font-family: inherit; }
+.axis { font-size: 11px; fill: var(--muted); font-family: inherit; }
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line-2); }
+.list li:last-child { border-bottom: 0; }
+.list .sub { color: var(--muted); font-size: 13px; }
+.bars { display: grid; gap: 10px; }
+.hbar { display: grid; grid-template-columns: 90px 1fr 34px; align-items: center; gap: 10px; font-size: 14px; }
+.hbar .track { height: 8px; background: var(--line-2); border-radius: 4px; overflow: hidden; }
+.hbar .fill { height: 100%; background: var(--ink-2); border-radius: 4px; }
+.muted { color: var(--muted); }
+.empty-note { color: var(--muted); padding: 10px 0; }
+
+/* ---------- المشتركون ---------- */
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.toolbar .in { max-width: 280px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 14px; font-size: 14px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 780px; }
+th { text-align: start; font-weight: 500; font-size: 13px; color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--line); background: #F7F9F5; }
+td { padding: 12px 14px; border-bottom: 1px solid var(--line-2); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { border-inline-start: 4px solid var(--c, var(--slate)); }
+tr.active { --c: var(--signal); }
+tr.paused { --c: var(--slate); }
+tr.expired { --c: var(--coral); }
+tr.pending { --c: var(--amber); }
+tr.paused .name, tr.expired .name { color: var(--muted); }
+.name { font-weight: 600; }
+.cell-sub { font-size: 13px; color: var(--muted); }
+.cell-sub.warn { color: #9A6B00; font-weight: 500; }
+.cell-sub.bad { color: var(--coral); }
+.row-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+.link { background: none; border: 0; padding: 0; color: inherit; text-align: start; }
+.link:hover .name { text-decoration: underline; }
+
+/* ---------- الباقات ---------- */
+.plans { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 18px; }
+.plan { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 18px; display: grid; gap: 12px; align-content: start; }
+.plan.new { border-style: dashed; }
+.plan h3 { font-size: 17px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.plan .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.feat { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line-2); font-size: 14px; }
+.feat .t { display: grid; }
+.feat .t small { color: var(--muted); font-size: 12px; }
+.tag { font-size: 11px; background: #EEF0EB; color: var(--muted); border-radius: 4px; padding: 0 6px; margin-inline-start: 6px; }
+.plan .foot { display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-top: 4px; }
+
+/* ---------- السجل والإعدادات ---------- */
+.log li { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: baseline; }
+.log .when { color: var(--muted); font-size: 13px; }
+.log .what strong { font-weight: 600; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line-2); flex-wrap: wrap; }
+.set-row .t strong { display: block; font-weight: 600; }
+.set-row .t span { color: var(--muted); font-size: 14px; }
+.set-row .in { width: 120px; }
+.sec { max-width: 760px; }
+
+/* ---------- نافذة المشترك ---------- */
+dialog { border: 0; border-radius: var(--r-md); padding: 0; width: min(640px, calc(100vw - 24px)); max-height: calc(100vh - 32px); box-shadow: 0 24px 60px rgba(18,39,43,.35); color: var(--text); background: var(--surface); }
+dialog::backdrop { background: rgba(18,39,43,.55); }
+.dlg-body { padding: 24px 26px; display: grid; gap: 22px; overflow-y: auto; max-height: calc(100vh - 32px - 74px); }
+.dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dlg-head h2 { font-size: 20px; font-weight: 700; }
+.dlg-sec { display: grid; gap: 12px; }
+.dlg-sec > h3 { font-size: 14px; font-weight: 600; color: var(--muted); padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.dlg-sec .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.dlg-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 26px; border-top: 1px solid var(--line); background: #F7F9F5; }
+.inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.inline .in { width: 110px; }
+.sel { display: grid; grid-template-columns: 1fr 190px; gap: 12px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line-2); }
+.sel .t { display: grid; font-size: 14px; }
+.sel .t small { color: var(--muted); font-size: 12px; }
+.chatbox { max-height: 260px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px; display: grid; gap: 6px; background: #F7F9F5; }
+.msg { padding: 6px 10px; border-radius: 8px; max-width: 86%; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.user { background: #DDF2E6; justify-self: start; }
+.msg.bot { background: #fff; border: 1px solid var(--line); justify-self: end; }
+.msg small { display: block; color: var(--muted); font-size: 11px; }
+.danger-zone { border: 1px solid #EDB6AD; border-radius: var(--r-sm); padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+#cfm { width: min(420px, calc(100vw - 24px)); padding: 24px 26px; }
+#cfm h3 { font-size: 18px; margin-bottom: 6px; }
+#cfm .dlg-actions { margin: 20px -26px -24px; }
+
+/* ---------- إشعارات ---------- */
+#toasts { position: fixed; inset-block-end: 18px; inset-inline-start: 18px; display: grid; gap: 8px; z-index: 50; max-width: min(420px, calc(100vw - 36px)); }
+.toast { background: var(--ink); color: #fff; padding: 10px 14px; border-radius: var(--r-sm); display: flex; align-items: center; gap: 14px; justify-content: space-between; font-size: 14px; box-shadow: 0 8px 24px rgba(18,39,43,.3); }
+.toast.err { background: #8E2A1E; }
+.toast-act { background: none; border: 0; color: #9FE3C4; font-weight: 600; padding: 0; text-decoration: underline; }
+
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; }
+  .side { position: static; height: auto; flex-direction: row; align-items: center; padding: 10px 12px; gap: 10px; overflow-x: auto; }
+  .brand span { display: none; }
+  .nav { display: flex; }
+  .nav button { white-space: nowrap; }
+  .nav button[aria-current="page"] { box-shadow: inset 0 -3px 0 var(--signal); }
+  .side .spacer { display: none; }
+  main { padding: 20px 16px 48px; }
+  .cols { grid-template-columns: 1fr; gap: 28px; }
+  .dlg-sec .two, .plan .two { grid-template-columns: 1fr; }
+  .sel { grid-template-columns: 1fr; }
+  .log li { grid-template-columns: 1fr; gap: 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login" hidden>
+  <form id="login-form" autocomplete="off">
+    <h1>لوحة التحكم</h1>
+    <p class="sub">أدخل مفتاح الإدارة للمتابعة.</p>
+    <label class="fld">مفتاح الإدارة
+      <input class="in" type="password" id="login-key" autocomplete="current-password" required>
+    </label>
+    <button class="btn primary" type="submit" id="login-btn">دخول</button>
+    <p class="err" id="login-error" role="alert"></p>
+  </form>
+</div>
+
+<div id="shell" class="shell" hidden>
+  <aside class="side">
+    <div class="brand"><i class="dot"></i><span>لوحة التحكم</span></div>
+    <nav class="nav" id="nav" aria-label="الأقسام"></nav>
+    <div class="spacer"></div>
+    <button class="logout" id="logout">تسجيل الخروج</button>
+  </aside>
+  <main>
+    <div id="banners"></div>
+    <header class="top">
+      <h1 id="view-title"></h1>
+      <div class="actions" id="view-actions"></div>
+    </header>
+    <div id="view"></div>
+  </main>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+<dialog id="dlg"></dialog>
+<dialog id="cfm"></dialog>
+
+<script>
+(() => {
+'use strict';
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const nf = new Intl.NumberFormat('en-US');
+const NS = 'http://www.w3.org/2000/svg';
+
+const STATUS_LABEL = { active: 'نشط', paused: 'موقوف', expired: 'منتهٍ', pending: 'بانتظار الموافقة' };
+const LAMP_LABEL = { active: 'يعمل', expiring: 'ينتهي قريباً', paused: 'موقوف', expired: 'منتهٍ', pending: 'بانتظار الموافقة' };
+
+const S = { view: 'overview', features: [], plans: [], settings: null, clients: [], filter: { q: '', status: 'all' }, booted: false };
+
+/* ---------- بناء DOM آمن (لا innerHTML إطلاقاً) ---------- */
+function append(el, kids) {
+  for (const k of kids.flat(Infinity)) {
+    if (k == null || k === false) continue;
+    el.append(k.nodeType ? k : document.createTextNode(String(k)));
+  }
+}
+function h(tag, props, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'on') for (const [ev, fn] of Object.entries(v)) el.addEventListener(ev, fn);
+    else if (k === 'value') el.value = v;
+    else if (k === 'checked') el.checked = true;
+    else if (k === 'disabled' || k === 'hidden' || k === 'required' || k === 'readonly') el.setAttribute(k, '');
+    else el.setAttribute(k, v);
+  }
+  append(el, kids);
+  return el;
+}
+function s(tag, attrs, ...kids) {
+  const el = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) el.setAttribute(k, v);
+  append(el, kids);
+  return el;
+}
+
+/* ---------- الاتصال بالخادم ---------- */
+async function api(path, { method = 'GET', body } = {}) {
+  const opts = { method, credentials: 'same-origin', headers: { 'X-Requested-With': 'admin-dashboard' } };
+  if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  let res;
+  try { res = await fetch('/admin/api' + path, opts); }
+  catch (e) { throw new Error('تعذّر الاتصال بالخادم. تحقق من الإنترنت وأعد المحاولة.'); }
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && path !== '/login') { showLogin(); const err = new Error('انتهت الجلسة، سجّل الدخول من جديد.'); err.status = 401; throw err; }
+  if (!res.ok) { const err = new Error(data.error || 'حدث خطأ غير متوقع.'); err.status = res.status; throw err; }
+  return data;
+}
+
+/* ---------- أدوات واجهة ---------- */
+function toast(msg, kind = 'ok', action) {
+  const t = h('div', { class: 'toast ' + (kind === 'err' ? 'err' : ''), role: kind === 'err' ? 'alert' : 'status' }, h('span', null, msg));
+  if (action) t.append(h('button', { class: 'toast-act', on: { click: () => { action.fn(); t.remove(); } } }, action.label));
+  $('#toasts').append(t);
+  setTimeout(() => t.remove(), action ? 7500 : 4500);
+}
+
+function confirmBox({ title, text, ok = 'تأكيد', danger = false }) {
+  return new Promise(resolve => {
+    const d = $('#cfm');
+    const done = v => { d.close(); resolve(v); };
+    d.replaceChildren(
+      h('h3', null, title), h('p', { class: 'muted' }, text),
+      h('div', { class: 'dlg-actions' },
+        h('button', { class: 'btn ghost', type: 'button', on: { click: () => done(false) } }, 'إلغاء'),
+        h('button', { class: 'btn ' + (danger ? 'danger' : 'primary'), type: 'button', on: { click: () => done(true) } }, ok)));
+    d.addEventListener('close', () => resolve(false), { once: true });
+    d.showModal();
+  });
+}
+
+function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('en-CA') : '—'; }
+function fmtTime(iso) { return iso ? new Date(iso).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }) : '—'; }
+function daysText(c) {
+  if (c.days_left == null) return { text: 'بلا انتهاء', cls: '' };
+  if (c.days_left < 0) return { text: `انتهى منذ ${nf.format(-c.days_left)} يوم`, cls: 'bad' };
+  if (c.days_left === 0) return { text: 'ينتهي اليوم', cls: 'warn' };
+  return { text: `باقي ${nf.format(c.days_left)} يوم`, cls: c.days_left <= 7 ? 'warn' : '' };
+}
+function money(n, cur) { return `${nf.format(n)} ${cur || ''}`.trim(); }
+
+function switchBtn(on, label, onToggle) {
+  const b = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(!!on), 'aria-label': label });
+  b.addEventListener('click', async () => {
+    const next = b.getAttribute('aria-checked') !== 'true';
+    b.setAttribute('aria-checked', String(next));
+    b.disabled = true;
+    try { await onToggle(next); } catch (e) { b.setAttribute('aria-checked', String(!next)); if (!e.cancel) toast(e.message, 'err'); }
+    b.disabled = false;
+  });
+  return b;
+}
+
+function icon(path) { return s('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true' }, s('path', { d: path })); }
+const NAV = [
+  { id: 'overview', label: 'نظرة عامة', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' },
+  { id: 'clients', label: 'المشتركون', icon: 'M12 11a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0' },
+  { id: 'plans', label: 'الباقات', icon: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5' },
+  { id: 'audit', label: 'سجل العمليات', icon: 'M5 6h14M5 12h14M5 18h9' },
+  { id: 'settings', label: 'الإعدادات', icon: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 7m-2 0a2 2 0 104 0 2 2 0 10-4 0M9 17m-2 0a2 2 0 104 0 2 2 0 10-4 0' },
+];
+const TITLES = { overview: 'نظرة عامة', clients: 'المشتركون', plans: 'الباقات والميزات', audit: 'سجل العمليات', settings: 'الإعدادات' };
+
+/* ---------- الدخول والتنقل ---------- */
+function showLogin(msg) {
+  $('#shell').hidden = true;
+  $('#login-screen').hidden = false;
+  $('#login-error').textContent = msg || '';
+  $('#login-key').focus();
+}
+
+async function enter() {
+  $('#login-screen').hidden = true;
+  $('#shell').hidden = false;
+  const [features, plans] = await Promise.all([api('/features'), api('/plans')]);
+  S.features = features; S.plans = plans;
+  await refreshBanners();
+  route();
+}
+
+function buildNav() {
+  const nav = $('#nav');
+  nav.replaceChildren(...NAV.map(n => h('button', { type: 'button', 'data-id': n.id, on: { click: () => { location.hash = n.id; } } }, icon(n.icon), n.label)));
+}
+
+async function refreshBanners() {
+  const box = $('#banners');
+  try { S.settings = await api('/settings'); } catch (e) { return; }
+  const st = S.settings;
+  const items = [];
+  if (!st.bot_enabled) {
+    items.push(h('div', { class: 'banner danger', role: 'alert' },
+      h('span', null, 'جميع البوتات متوقفة الآن. لن يردّ أي مشترك على زبائنه.'),
+      h('button', { class: 'btn sm', type: 'button', on: { click: async () => { await api('/settings', { method: 'POST', body: { bot_enabled: true } }); toast('تم تشغيل جميع البوتات'); await refreshBanners(); if (S.view === 'settings') route(); } } }, 'تشغيل الجميع')));
+  }
+  if (st.storage === 'sqlite') {
+    items.push(h('div', { class: 'banner warn' }, h('span', null, 'التخزين مؤقت: ستُمحى بيانات المشتركين عند كل نشر على Render. اضبط المتغير DATABASE_URL لتفعيل قاعدة بيانات دائمة.')));
+  }
+  box.replaceChildren(...items);
+}
+
+function route() {
+  const id = (location.hash || '#overview').slice(1);
+  S.view = TITLES[id] ? id : 'overview';
+  for (const b of $('#nav').children) { if (b.dataset.id === S.view) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }
+  $('#view-title').textContent = TITLES[S.view];
+  const actions = $('#view-actions');
+  actions.replaceChildren(h('button', { class: 'btn', type: 'button', on: { click: route } }, 'تحديث'));
+  if (S.view === 'clients' || S.view === 'overview') actions.append(h('button', { class: 'btn primary', type: 'button', on: { click: () => openClientDialog(null) } }, 'إضافة مشترك'));
+  const root = $('#view');
+  root.replaceChildren(h('p', { class: 'empty-note' }, 'جارٍ التحميل…'));
+  const views = { overview: viewOverview, clients: viewClients, plans: viewPlans, audit: viewAudit, settings: viewSettings };
+  views[S.view](root).catch(e => { if (e.status !== 401) root.replaceChildren(h('p', { class: 'empty-note' }, e.message)); });
+}
+
+/* ---------- نظرة عامة ---------- */
+function barChart(series) {
+  const W = 640, H = 170, n = series.length, gap = 8, bw = (W - gap * (n - 1)) / n;
+  const max = Math.max(1, ...series.map(x => x.count));
+  const svg = s('svg', { viewBox: `0 0 ${W} ${H + 24}`, class: 'chart', role: 'img', 'aria-label': 'عدد الرسائل في آخر 14 يوماً' });
+  series.forEach((d, i) => {
+    const bh = Math.max(d.count ? 5 : 2, (d.count / max) * (H - 20));
+    const x = (n - 1 - i) * (bw + gap);   // الأقدم على اليمين
+    svg.append(s('rect', { x, y: H - bh, width: bw, height: bh, rx: 3, class: i === n - 1 ? 'bar today' : 'bar' }, s('title', null, `${d.day}: ${d.count}`)));
+    if (d.count) svg.append(s('text', { x: x + bw / 2, y: H - bh - 5, 'text-anchor': 'middle', class: 'bar-val' }, d.count));
+  });
+  [0, Math.floor(n / 2), n - 1].forEach(i => {
+    svg.append(s('text', { x: (n - 1 - i) * (bw + gap) + bw / 2, y: H + 17, 'text-anchor': 'middle', class: 'axis' }, series[i].day.slice(5)));
+  });
+  return svg;
+}
+
+async function viewOverview(root) {
+  const o = await api('/overview');
+  const c = o.counts;
+  const first = !S.booted; S.booted = true;
+
+  const lamps = h('div', { class: 'lamps' + (first ? ' boot' : '') },
+    o.lamps.map((l, i) => h('button', { class: 'lamp ' + l.state, type: 'button', style: `--i:${i}`, title: `${l.name} — ${LAMP_LABEL[l.state]}`, 'aria-label': `${l.name} — ${LAMP_LABEL[l.state]}`, on: { click: () => openClientById(l.id) } })));
+  const running = c.active;
+  const board = h('section', { class: 'board', 'aria-label': 'حالة البوتات' },
+    h('div', { class: 'board-head' },
+      h('h2', null, 'حالة البوتات'),
+      h('p', null, h('strong', null, nf.format(running)), `من ${nf.format(c.total)} بوت يعمل الآن`)),
+    c.total === 0
+      ? h('div', { class: 'empty' }, h('span', null, 'لا يوجد مشتركون بعد. أضف أول مشترك ليظهر هنا كمصباح.'), h('button', { class: 'btn', type: 'button', on: { click: () => openClientDialog(null) } }, 'إضافة مشترك'))
+      : lamps,
+    h('div', { class: 'legend' }, ...[['active', '#17A06A'], ['expiring', '#D99A12'], ['paused', '#52666B'], ['expired', '#CF4A3A']].map(([k, col]) => h('span', null, h('i', { style: `background:${col}` }), LAMP_LABEL[k])), h('span', null, h('i', { style: 'border:2px dashed #9DB3AD' }), LAMP_LABEL.pending)));
+
+  const stat = (label, value, cls, unit) => h('div', { class: 'stat ' + (cls || '') }, h('dt', null, label), h('dd', null, value, unit ? h('small', null, unit) : null));
+  const stats = h('dl', { class: 'stats', style: 'margin-block:0 30px' },
+    stat('المشتركون', nf.format(c.total)),
+    stat('نشطون', nf.format(c.active), 'good'),
+    stat('موقوفون', nf.format(c.paused)),
+    stat('منتهون', nf.format(c.expired), c.expired ? 'bad' : ''),
+    stat('بانتظار الموافقة', nf.format(c.pending), c.pending ? 'warn' : ''),
+    stat('رسائل اليوم', nf.format(o.messages_today)),
+    stat('رسائل 7 أيام', nf.format(o.messages_7d)),
+    stat('إيراد شهري تقديري', nf.format(o.revenue_monthly), '', o.currency));
+
+  const expiring = h('section', null, h('h2', null, 'اشتراكات تنتهي خلال 7 أيام'),
+    o.expiring.length
+      ? h('ul', { class: 'list' }, o.expiring.map(e => h('li', null,
+          h('div', null, h('div', { class: 'name' }, e.store_name), h('div', { class: 'sub' }, `${e.plan_name} · ${e.days_left === 0 ? 'ينتهي اليوم' : 'باقي ' + e.days_left + ' يوم'}`)),
+          h('button', { class: 'btn sm', type: 'button', on: { click: async () => { try { await api('/clients/' + e.id, { method: 'PATCH', body: { extend_days: 30 } }); toast('تم تمديد الاشتراك 30 يوماً'); route(); } catch (er) { toast(er.message, 'err'); } } } }, 'تمديد 30 يوماً'))))
+      : h('p', { class: 'empty-note' }, 'لا توجد اشتراكات قريبة من الانتهاء.'));
+
+  const maxPlan = Math.max(1, ...o.plans.map(p => p.count));
+  const dist = h('section', null, h('h2', null, 'توزيع المشتركين على الباقات'),
+    h('div', { class: 'bars' }, o.plans.map(p => h('div', { class: 'hbar' }, h('span', null, p.name), h('div', { class: 'track' }, h('div', { class: 'fill', style: `width:${(p.count / maxPlan) * 100}%` })), h('span', null, nf.format(p.count))))));
+
+  const top = h('section', null, h('h2', null, 'الأكثر نشاطاً هذا الأسبوع'),
+    o.top.length
+      ? h('ul', { class: 'list' }, o.top.map(t => h('li', null, h('button', { class: 'link', type: 'button', on: { click: () => openClientById(t.id) } }, h('span', { class: 'name' }, t.store_name)), h('span', { class: 'muted' }, `${nf.format(t.messages_7d)} رسالة`))))
+      : h('p', { class: 'empty-note' }, 'لا توجد رسائل مسجّلة بعد.'));
+
+  root.replaceChildren(board, stats,
+    h('div', { class: 'cols' }, h('section', null, h('h2', null, 'الرسائل في آخر 14 يوماً'), barChart(o.series)), expiring),
+    h('div', { class: 'cols', style: 'margin-top:36px' }, dist, top));
+}
+
+/* ---------- المشتركون ---------- */
+async function loadClients() {
+  const qs = new URLSearchParams();
+  if (S.filter.q) qs.set('q', S.filter.q);
+  if (S.filter.status !== 'all') qs.set('status', S.filter.status);
+  S.clients = await api('/clients' + (qs.toString() ? '?' + qs : ''));
+  return S.clients;
+}
+
+async function toggleClient(c, next) {
+  await api('/clients/' + c.id, { method: 'PATCH', body: { enabled: next } });
+  toast(next ? `تم تشغيل البوت لدى ${c.store_name}` : `تم إيقاف البوت لدى ${c.store_name}`, 'ok',
+    next ? null : { label: 'تراجع', fn: async () => { try { await toggleClient(c, true); if (S.view === 'clients') drawClients(); } catch (e) { toast(e.message, 'err'); } } });
+}
+
+function clientRow(c, redraw) {
+  const d = daysText(c);
+  const control = c.pending
+    ? h('button', { class: 'btn sm primary', type: 'button', on: { click: async () => { try { await api('/clients/' + c.id, { method: 'PATCH', body: { approve: true } }); toast(`تمت الموافقة على ${c.store_name}`); redraw(); } catch (e) { toast(e.message, 'err'); } } } }, 'موافقة')
+    : switchBtn(c.enabled, `تشغيل البوت لدى ${c.store_name}`, async next => { await toggleClient(c, next); redraw(); });
+  return h('tr', { class: c.status },
+    h('td', null, h('button', { class: 'link', type: 'button', on: { click: () => openClientDialog(c) } }, h('div', { class: 'name' }, c.store_name), h('div', { class: 'cell-sub' }, c.phone_id))),
+    h('td', null, c.plan_name),
+    h('td', null, h('span', { class: 'badge ' + c.status }, STATUS_LABEL[c.status]), c.last_error && c.status === 'active' ? h('span', { class: 'badge warn', title: c.last_error, style: 'margin-inline-start:6px' }, 'خطأ في الرد') : null),
+    h('td', null, h('div', null, fmtDate(c.expiry)), h('div', { class: 'cell-sub ' + d.cls }, d.text)),
+    h('td', null, nf.format(c.messages_7d), h('div', { class: 'cell-sub' }, `الإجمالي ${nf.format(c.messages_total)}`)),
+    h('td', null, h('div', { class: 'row-actions' }, control)),
+    h('td', null, h('div', { class: 'row-actions' }, h('button', { class: 'btn sm', type: 'button', on: { click: () => openClientDialog(c) } }, 'تعديل'))));
+}
+
+async function drawClients() {
+  const holder = $('#clients-holder');
+  if (!holder) return;
+  const list = await loadClients();
+  if (!list.length) {
+    holder.replaceChildren(h('p', { class: 'empty-note' }, S.filter.q || S.filter.status !== 'all' ? 'لا توجد نتائج مطابقة. غيّر البحث أو التصفية.' : 'لا يوجد مشتركون بعد. اضغط «إضافة مشترك» للبدء.'));
+    return;
+  }
+  holder.replaceChildren(h('div', { class: 'table-wrap' }, h('table', null,
+    h('thead', null, h('tr', null, ['المتجر', 'الباقة', 'الحالة', 'الاشتراك', 'رسائل 7 أيام', 'البوت', ''].map(t => h('th', null, t)))),
+    h('tbody', null, list.map(c => clientRow(c, drawClients))))));
+}
+
+async function viewClients(root) {
+  const chips = [['all', 'الكل'], ['active', 'نشط'], ['paused', 'موقوف'], ['expired', 'منتهٍ'], ['pending', 'بانتظار الموافقة']];
+  let timer;
+  const search = h('input', { class: 'in', type: 'search', placeholder: 'ابحث بالاسم أو الرقم أو الملاحظات', value: S.filter.q, 'aria-label': 'بحث', on: { input: e => { clearTimeout(timer); timer = setTimeout(() => { S.filter.q = e.target.value.trim(); drawClients().catch(er => toast(er.message, 'err')); }, 250); } } });
+  const chipBox = h('div', { class: 'chips' }, chips.map(([k, l]) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(S.filter.status === k), on: { click: e => { S.filter.status = k; for (const b of chipBox.children) b.setAttribute('aria-pressed', String(b === e.currentTarget)); drawClients().catch(er => toast(er.message, 'err')); } } }, l)));
+  root.replaceChildren(h('div', { class: 'toolbar' }, search, chipBox), h('div', { id: 'clients-holder' }));
+  await drawClients();
+}
+
+async function openClientById(id) {
+  try {
+    const list = await api('/clients');
+    const c = list.find(x => x.id === id);
+    if (c) openClientDialog(c); else toast('المشترك غير موجود', 'err');
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+function openClientDialog(c) {
+  const isNew = !c;
+  const d = $('#dlg');
+  const f = {};
+  const mk = (name, props) => (f[name] = h('input', Object.assign({ class: 'in', name }, props)));
+  const close = () => d.close();
+  const refreshView = () => { if (S.view === 'clients') drawClients().catch(() => {}); else route(); };
+
+  mk('store_name', { type: 'text', value: c ? c.store_name : '', maxlength: '120', placeholder: 'مثال: متجر النور' });
+  mk('phone_id', { type: 'text', value: c ? c.phone_id : '', inputmode: 'numeric', placeholder: 'Phone Number ID من ميتا', readonly: !isNew, required: isNew });
+  mk('whatsapp_token', { type: 'password', autocomplete: 'off', placeholder: isNew ? 'الصق توكن واتساب' : `المحفوظ ${c.token_hint} — اتركه فارغاً للإبقاء عليه`, required: isNew });
+  mk('gemini_key', { type: 'password', autocomplete: 'off', placeholder: !isNew && c.has_gemini_key ? `المحفوظ ${c.gemini_hint} — اتركه فارغاً للإبقاء عليه` : 'اختياري: بدونه يُستعمل المفتاح العام' });
+  f.notes = h('textarea', { class: 'in', name: 'notes', maxlength: '2000', placeholder: 'ملاحظات خاصة بك عن هذا المشترك' });
+  f.notes.value = c ? c.notes : '';
+
+  const planSel = h('select', { class: 'in', name: 'plan_key' }, S.plans.filter(p => p.is_active || (c && p.key === c.plan_key)).map(p => h('option', { value: p.key }, `${p.name} — ${money(p.price, S.settings && S.settings.currency)} / ${p.duration_days} يوم`)));
+  planSel.value = c ? c.plan_key : (S.plans[0] && S.plans[0].key);
+  const days = h('input', { class: 'in', type: 'number', min: '1', max: '3650', value: String((S.plans.find(p => p.key === planSel.value) || {}).duration_days || 30) });
+
+  /* الميزات: ثلاثية الحالة (حسب الباقة / تفعيل / تعطيل) */
+  const featSelects = {};
+  const featRows = S.features.map(ft => {
+    const sel = h('select', { class: 'in', 'aria-label': ft.label }, h('option', { value: '' }), h('option', { value: 'on' }, 'مفعّلة لهذا المشترك'), h('option', { value: 'off' }, 'معطّلة لهذا المشترك'));
+    sel.value = c && c.overrides && ft.key in c.overrides ? (c.overrides[ft.key] ? 'on' : 'off') : '';
+    featSelects[ft.key] = sel;
+    return h('div', { class: 'sel' }, h('div', { class: 't' }, h('span', null, ft.label, ft.enforced ? null : h('span', { class: 'tag' }, 'غير مطبّقة برمجياً بعد')), h('small', null, ft.hint)), sel);
+  });
+  const syncFeatLabels = () => {
+    const plan = S.plans.find(p => p.key === planSel.value);
+    for (const ft of S.features) featSelects[ft.key].options[0].textContent = `حسب الباقة (${plan && plan.features[ft.key] ? 'مفعّلة' : 'معطّلة'})`;
+  };
+  planSel.addEventListener('change', () => { syncFeatLabels(); const p = S.plans.find(x => x.key === planSel.value); if (p && isNew) days.value = p.duration_days; });
+  syncFeatLabels();
+
+  const secBase = h('section', { class: 'dlg-sec' }, h('h3', null, 'بيانات المشترك'),
+    h('div', { class: 'two' }, h('label', { class: 'fld' }, 'اسم المتجر', f.store_name), h('label', { class: 'fld' }, 'معرّف رقم الهاتف (Phone Number ID)', f.phone_id)),
+    h('label', { class: 'fld' }, 'توكن واتساب', f.whatsapp_token),
+    h('label', { class: 'fld' }, 'مفتاح Gemini الخاص بالمشترك', f.gemini_key,
+      h('span', { class: 'hint' }, 'كل مشترك بمفتاحه يوزّع الحمل ويحمي الحصة العامة.')),
+    isNew ? null : h('div', { class: 'inline' },
+      h('button', { class: 'btn sm', type: 'button', on: { click: async e => { const b = e.currentTarget; b.disabled = true; try { const r = await api(`/clients/${c.id}/test-gemini`, { method: 'POST', body: {} }); toast(r.message, r.ok ? 'ok' : 'err'); } catch (er) { toast(er.message, 'err'); } b.disabled = false; } } }, 'اختبار مفتاح Gemini'),
+      c.has_gemini_key ? h('button', { class: 'btn sm', type: 'button', on: { click: async () => { if (!await confirmBox({ title: 'حذف مفتاح Gemini', text: 'سيعود هذا المشترك لاستعمال المفتاح العام.', ok: 'حذف المفتاح', danger: true })) return; try { const u = await api('/clients/' + c.id, { method: 'PATCH', body: { clear_gemini_key: true } }); toast('تم حذف المفتاح'); refreshView(); openClientDialog(u); } catch (er) { toast(er.message, 'err'); } } } }, 'حذف المفتاح') : null,
+      c.last_error ? h('span', { class: 'hint' }, `آخر خطأ: ${c.last_error}`) : null),
+    h('label', { class: 'fld' }, 'ملاحظات', f.notes));
+
+  const renew = (body, msg) => async () => { try { const u = await api('/clients/' + c.id, { method: 'PATCH', body }); toast(msg); refreshView(); openClientDialog(u); } catch (er) { toast(er.message, 'err'); } };
+  const customDays = h('input', { class: 'in', type: 'number', min: '1', max: '3650', placeholder: 'أيام' });
+  const secSub = h('section', { class: 'dlg-sec' }, h('h3', null, 'الاشتراك'),
+    h('label', { class: 'fld' }, 'الباقة', planSel),
+    isNew
+      ? h('label', { class: 'fld' }, 'مدة الاشتراك بالأيام', days)
+      : [h('p', null, 'ينتهي في ', h('strong', null, fmtDate(c.expiry)), ' — ', h('span', { class: 'muted' }, daysText(c).text)),
+         h('div', { class: 'inline' },
+           h('span', { class: 'muted' }, 'تمديد:'),
+           [7, 30, 90].map(n => h('button', { class: 'btn sm', type: 'button', on: { click: renew({ extend_days: n }, `تم تمديد الاشتراك ${n} يوماً`) } }, `+${n} يوماً`)),
+           h('span', { class: 'muted', style: 'margin-inline-start:10px' }, 'أو تجديد من اليوم:'), customDays,
+           h('button', { class: 'btn sm', type: 'button', on: { click: () => { if (!customDays.value) { toast('اكتب عدد الأيام أولاً', 'err'); return; } renew({ set_days: Number(customDays.value) }, 'تم تجديد الاشتراك')(); } } }, 'تجديد'))]);
+
+  const secFeat = h('section', { class: 'dlg-sec' }, h('h3', null, 'الميزات المدفوعة'), h('p', { class: 'hint' }, 'الأصل هو ما تحدده الباقة. اختر «مفعّلة» أو «معطّلة» لاستثناء هذا المشترك فقط.'), featRows);
+
+  let secChats = null;
+  if (!isNew) {
+    const box = h('div', { class: 'chatbox', hidden: true });
+    const info = h('p', { class: 'hint' }, 'تظهر هنا آخر المحادثات إذا كانت ميزة «حفظ المحادثات» مفعّلة لهذا المشترك.');
+    secChats = h('section', { class: 'dlg-sec' }, h('h3', null, 'آخر المحادثات'), info, box,
+      h('div', { class: 'inline' }, h('button', { class: 'btn sm', type: 'button', on: { click: async e => {
+        const b = e.currentTarget; b.disabled = true;
+        try {
+          const r = await api(`/clients/${c.id}/chats`);
+          if (!r.enabled) { info.textContent = 'ميزة «حفظ المحادثات» غير مفعّلة لهذا المشترك.'; box.hidden = true; }
+          else if (!r.chats.length) { info.textContent = 'لا توجد محادثات محفوظة بعد.'; box.hidden = true; }
+          else { info.textContent = ''; box.hidden = false; box.replaceChildren(...r.chats.map(m => h('div', { class: 'msg ' + m.role }, h('small', null, `${m.role === 'user' ? 'زبون ' + m.customer : 'البوت'} · ${fmtTime(m.at)}`), m.text))); box.scrollTop = box.scrollHeight; }
+        } catch (er) { toast(er.message, 'err'); }
+        b.disabled = false;
+      } } }, 'عرض المحادثات')));
+  }
+
+  const secDanger = isNew ? null : h('section', { class: 'dlg-sec' }, h('h3', null, 'منطقة الحذف'),
+    h('div', { class: 'danger-zone' }, h('span', null, 'حذف المشترك يمحو بياناته وسجل استعماله نهائياً.'),
+      h('button', { class: 'btn danger sm', type: 'button', on: { click: async () => {
+        if (!await confirmBox({ title: `حذف ${c.store_name}؟`, text: 'لا يمكن التراجع عن الحذف. إن أردت إيقاف البوت فقط فاستعمل مفتاح التشغيل.', ok: 'حذف نهائياً', danger: true })) return;
+        try { await api('/clients/' + c.id, { method: 'DELETE' }); toast('تم حذف المشترك'); close(); refreshView(); } catch (er) { toast(er.message, 'err'); }
+      } } }, 'حذف المشترك')));
+
+  const form = h('form', { method: 'dialog', novalidate: true });
+  const saveBtn = h('button', { class: 'btn primary', type: 'submit' }, isNew ? 'إضافة المشترك' : 'حفظ التغييرات');
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const overrides = {};
+    for (const ft of S.features) { const v = featSelects[ft.key].value; if (v === 'on') overrides[ft.key] = true; if (v === 'off') overrides[ft.key] = false; }
+    saveBtn.disabled = true;
+    try {
+      if (isNew) {
+        if (!f.store_name.value.trim()) throw new Error('اكتب اسم المتجر.');
+        const created = await api('/clients', { method: 'POST', body: { store_name: f.store_name.value, phone_id: f.phone_id.value, whatsapp_token: f.whatsapp_token.value, gemini_key: f.gemini_key.value, plan_key: planSel.value, days: Number(days.value), notes: f.notes.value } });
+        if (Object.keys(overrides).length) await api('/clients/' + created.id, { method: 'PATCH', body: { overrides } });
+        toast('تمت إضافة المشترك');
+      } else {
+        const body = { store_name: f.store_name.value, notes: f.notes.value, plan_key: planSel.value, overrides };
+        if (f.whatsapp_token.value.trim()) body.whatsapp_token = f.whatsapp_token.value;
+        if (f.gemini_key.value.trim()) body.gemini_key = f.gemini_key.value;
+        await api('/clients/' + c.id, { method: 'PATCH', body });
+        toast('تم حفظ التغييرات');
+      }
+      close(); refreshView();
+    } catch (er) { toast(er.message, 'err'); }
+    saveBtn.disabled = false;
+  });
+
+  const head = h('div', { class: 'dlg-head' }, h('h2', null, isNew ? 'مشترك جديد' : c.store_name), isNew ? null : h('span', { class: 'badge ' + c.status }, STATUS_LABEL[c.status]));
+  form.append(
+    h('div', { class: 'dlg-body' }, head, secBase, secSub, secFeat, secChats, secDanger),
+    h('div', { class: 'dlg-actions' },
+      h('button', { class: 'btn ghost', type: 'button', on: { click: close } }, 'إغلاق'),
+      !isNew && c.pending ? h('button', { class: 'btn', type: 'button', on: { click: async () => { try { await api('/clients/' + c.id, { method: 'PATCH', body: { approve: true } }); toast('تمت الموافقة'); close(); refreshView(); } catch (er) { toast(er.message, 'err'); } } } }, 'موافقة وتشغيل') : null,
+      saveBtn));
+  d.replaceChildren(form);
+  if (!d.open) d.showModal();
+}
+
+/* ---------- الباقات ---------- */
+function planPanel(p) {
+  const isNew = !p;
+  const cur = (S.settings && S.settings.currency) || '';
+  const key = h('input', { class: 'in', type: 'text', value: p ? p.key : '', placeholder: 'مثال: gold', readonly: !isNew, maxlength: '40', dir: 'ltr' });
+  const name = h('input', { class: 'in', type: 'text', value: p ? p.name : '', maxlength: '80', placeholder: 'اسم الباقة' });
+  const price = h('input', { class: 'in', type: 'number', min: '0', value: String(p ? p.price : 0) });
+  const dur = h('input', { class: 'in', type: 'number', min: '1', max: '3650', value: String(p ? p.duration_days : 30) });
+  const active = switchBtn(p ? p.is_active : true, 'الباقة متاحة للاشتراك', async () => {});
+  const feats = {};
+  const rows = S.features.map(ft => {
+    const sw = switchBtn(p ? p.features[ft.key] : false, ft.label, async () => {});
+    feats[ft.key] = sw;
+    return h('div', { class: 'feat' }, h('div', { class: 't' }, h('span', null, ft.label, ft.enforced ? null : h('span', { class: 'tag' }, 'غير مطبّقة بعد')), h('small', null, ft.hint)), sw);
+  });
+  const save = h('button', { class: 'btn primary sm', type: 'button', on: { click: async e => {
+    const b = e.currentTarget; b.disabled = true;
+    try {
+      const features = {};
+      for (const ft of S.features) features[ft.key] = feats[ft.key].getAttribute('aria-checked') === 'true';
+      await api('/plans', { method: 'POST', body: { key: key.value, name: name.value, price: Number(price.value), duration_days: Number(dur.value), features, is_active: active.getAttribute('aria-checked') === 'true' } });
+      toast(isNew ? 'تم إنشاء الباقة' : 'تم حفظ الباقة');
+      S.plans = await api('/plans');
+      route();
+    } catch (er) { toast(er.message, 'err'); b.disabled = false; }
+  } } }, isNew ? 'إنشاء الباقة' : 'حفظ الباقة');
+  const del = isNew ? null : h('button', { class: 'btn sm', type: 'button', disabled: p.client_count > 0, title: p.client_count > 0 ? 'لا يمكن حذف باقة مرتبطة بمشتركين' : '', on: { click: async () => {
+    if (!await confirmBox({ title: `حذف باقة ${p.name}؟`, text: 'لن تتأثر بيانات أي مشترك لأن الباقة غير مرتبطة بأحد.', ok: 'حذف الباقة', danger: true })) return;
+    try { await api('/plans/' + p.key, { method: 'DELETE' }); toast('تم حذف الباقة'); S.plans = await api('/plans'); route(); } catch (er) { toast(er.message, 'err'); }
+  } } }, 'حذف');
+  return h('section', { class: 'plan' + (isNew ? ' new' : '') },
+    h('h3', null, isNew ? 'باقة جديدة' : p.name, isNew ? null : h('span', { class: 'muted', style: 'font-size:13px;font-weight:400' }, `${nf.format(p.client_count)} مشترك`)),
+    h('div', { class: 'two' }, h('label', { class: 'fld' }, 'الاسم', name), h('label', { class: 'fld' }, 'المعرّف', key)),
+    h('div', { class: 'two' }, h('label', { class: 'fld' }, `السعر (${cur})`, price), h('label', { class: 'fld' }, 'المدة بالأيام', dur)),
+    h('div', { class: 'feat', style: 'border-top:0' }, h('div', { class: 't' }, h('span', null, 'متاحة للاشتراك'), h('small', null, 'الباقة المعطّلة لا تظهر عند إضافة مشترك جديد')), active),
+    rows,
+    h('div', { class: 'foot' }, save, del));
+}
+
+async function viewPlans(root) {
+  S.plans = await api('/plans');
+  root.replaceChildren(
+    h('p', { class: 'muted', style: 'margin-bottom:18px;max-width:640px' }, 'عدّل السعر والمدة والميزات لكل باقة. التغيير يسري فوراً على جميع مشتركيها، ويمكنك استثناء مشترك واحد من نافذته.'),
+    h('div', { class: 'plans' }, S.plans.map(planPanel), planPanel(null)));
+}
+
+/* ---------- السجل ---------- */
+async function viewAudit(root) {
+  const items = await api('/audit');
+  root.replaceChildren(items.length
+    ? h('ul', { class: 'list log sec', style: 'max-width:900px' }, items.map(i => h('li', null, h('span', { class: 'when' }, fmtTime(i.ts)), h('span', { class: 'what' }, h('strong', null, i.action), i.target ? ' — ' + i.target : '', i.detail ? h('span', { class: 'muted' }, ' · ' + i.detail) : null))))
+    : h('p', { class: 'empty-note' }, 'لا توجد عمليات مسجّلة بعد.'));
+}
+
+/* ---------- الإعدادات ---------- */
+async function viewSettings(root) {
+  const st = await api('/settings');
+  S.settings = st;
+  const master = switchBtn(st.bot_enabled, 'تشغيل جميع البوتات', async next => {
+    if (!next && !await confirmBox({ title: 'إيقاف جميع البوتات؟', text: 'سيتوقف الرد لدى كل المشتركين فوراً حتى تعيد التشغيل. استعمل هذا عند الطوارئ فقط.', ok: 'إيقاف الجميع', danger: true })) { const c = new Error('cancel'); c.cancel = true; throw c; }
+    await api('/settings', { method: 'POST', body: { bot_enabled: next } });
+    toast(next ? 'تم تشغيل جميع البوتات' : 'تم إيقاف جميع البوتات');
+    await refreshBanners();
+  });
+  const cur = h('input', { class: 'in', type: 'text', value: st.currency, maxlength: '8', 'aria-label': 'العملة' });
+  const row = (title, sub, control) => h('div', { class: 'set-row' }, h('div', { class: 't' }, h('strong', null, title), h('span', null, sub)), control);
+  root.replaceChildren(h('div', { class: 'sec' },
+    row('تشغيل جميع البوتات', 'مفتاح الطوارئ العام. إيقاف مشترك واحد يتم من صفحة المشتركين.', master),
+    row('العملة', 'تظهر بجانب الأسعار والإيراد التقديري.', h('div', { class: 'inline' }, cur, h('button', { class: 'btn sm', type: 'button', on: { click: async () => { try { await api('/settings', { method: 'POST', body: { currency: cur.value } }); toast('تم حفظ العملة'); S.settings.currency = cur.value.trim() || 'DZD'; } catch (e) { toast(e.message, 'err'); } } } }, 'حفظ'))),
+    row('التجربة العامة', `تخص الأرقام غير المسجّلة كمشتركين. تنتهي في ${fmtDate(st.global_expiry)}.`, h('button', { class: 'btn sm', type: 'button', on: { click: async () => { try { await api('/settings', { method: 'POST', body: { extend_global_trial_days: 30 } }); toast('تم تمديد التجربة 30 يوماً'); route(); } catch (e) { toast(e.message, 'err'); } } } }, 'تمديد 30 يوماً')),
+    row('التخزين', st.storage === 'postgres' ? 'قاعدة بيانات Postgres دائمة.' : 'SQLite مؤقت: تُمحى البيانات عند كل نشر. اضبط DATABASE_URL.', h('span', { class: 'badge ' + (st.storage === 'postgres' ? 'active' : 'expired') }, st.storage === 'postgres' ? 'دائم' : 'مؤقت')),
+    row('تشفير الأسرار', st.custom_encryption_key ? 'مفتاح تشفير مستقل (ENCRYPTION_KEY).' : 'مفتاح مشتق من ADMIN_KEY. اضبط ENCRYPTION_KEY حتى لا تضيع الأسرار إن غيّرت مفتاح الإدارة.', h('span', { class: 'badge ' + (st.custom_encryption_key ? 'active' : 'pending') }, st.custom_encryption_key ? 'مستقل' : 'مشتق')),
+    row('نموذج Gemini', 'يُغيَّر من المتغير GEMINI_MODEL في Render.', h('code', { dir: 'ltr' }, st.model)),
+    row('قراءة PDF (RAG)', 'تُفعَّل من المتغير ENABLE_PDF_RAG ثم من ميزة «قراءة كتالوج PDF» لكل باقة.', h('span', { class: 'badge ' + (st.rag_enabled ? 'active' : 'paused') }, st.rag_enabled ? 'مفعّلة' : 'معطّلة'))));
+}
+
+/* ---------- التشغيل ---------- */
+$('#login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = $('#login-btn');
+  btn.disabled = true;
+  $('#login-error').textContent = '';
+  try {
+    await api('/login', { method: 'POST', body: { key: $('#login-key').value } });
+    $('#login-key').value = '';
+    await enter();
+  } catch (er) { $('#login-error').textContent = er.message; }
+  btn.disabled = false;
+});
+$('#logout').addEventListener('click', async () => { try { await api('/logout', { method: 'POST', body: {} }); } catch (e) { /* تجاهل */ } showLogin(); });
+window.addEventListener('hashchange', () => { if (!$('#shell').hidden) route(); });
+
+buildNav();
+api('/me').then(enter).catch(e => { if (e.status !== 401) showLogin(e.message); else showLogin(); });
+})();
+</script>
+</body>
+</html>
