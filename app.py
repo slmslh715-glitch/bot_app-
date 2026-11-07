@@ -238,11 +238,11 @@ def get_catalogue_context(phone_id, msg, allowed):
 # ---------------------------------------------------------------------------
 # منطق الرد المشترك
 # ---------------------------------------------------------------------------
-def build_reply(history_key, msg, phone_id=None, api_key=None, use_rag=False):
+def build_reply(history_key, msg, phone_id=None, api_key=None, use_rag=False, use_memory=True):
     store = load_store_data(phone_id)
 
     with history_lock:
-        history = list(chat_histories.get(history_key, []))
+        history = list(chat_histories.get(history_key, [])) if use_memory else []
         lang = detect_language(msg) or chat_langs.get(history_key) or "ar"
 
     system_instruction = (
@@ -268,6 +268,9 @@ def build_reply(history_key, msg, phone_id=None, api_key=None, use_rag=False):
     )
     reply = safe_generate_content(prompt, system_instruction, api_key=api_key)
     reply = reply.replace("**", "").replace("*", "").strip()
+
+    if not use_memory:
+        return reply
 
     with history_lock:
         if history_key not in chat_histories and len(chat_histories) >= MAX_CONVERSATIONS:
@@ -435,6 +438,11 @@ def receive_whatsapp():
             feats = client["features"]
             client_id = client["id"]
             reply = None
+            # حد المحادثات الشهري للباقة: عند التجاوز لا رد جديد لزبائن جدد
+            if not db.allow_conversation(client_id, num, client.get("monthly_limit", 0)):
+                log.info("المشترك %s تجاوز حد المحادثات الشهري", client_id)
+                db.record_error(client_id, "تجاوز حد المحادثات الشهري للباقة")
+                return "ok", 200
         else:
             whatsapp_token = DEFAULT_WHATSAPP_TOKEN
             phone_id = phone_id_real
@@ -448,7 +456,8 @@ def receive_whatsapp():
         if reply is None:
             try:
                 reply = build_reply(f"{phone_id_real}:{num}", msg, phone_id_real,
-                                    api_key=gemini_key, use_rag=feats.get("pdf_rag", False))
+                                    api_key=gemini_key, use_rag=feats.get("pdf_rag", False),
+                                    use_memory=(feats.get("memory", False) if client_id else True))
                 if client_id:
                     try:
                         db.record_message(client_id)
