@@ -531,7 +531,7 @@ function clientRow(c, redraw) {
     h('td', null, c.plan_name),
     h('td', null, h('span', { class: 'badge ' + c.status }, STATUS_LABEL[c.status]), c.last_error && c.status === 'active' ? h('span', { class: 'badge warn', title: c.last_error, style: 'margin-inline-start:6px' }, 'خطأ في الرد') : null),
     h('td', null, h('div', null, fmtDate(c.expiry)), h('div', { class: 'cell-sub ' + d.cls }, d.text)),
-    h('td', null, nf.format(c.messages_7d), h('div', { class: 'cell-sub' }, `الإجمالي ${nf.format(c.messages_total)}`)),
+    h('td', null, nf.format(c.messages_7d), h('div', { class: 'cell-sub' }, `محادثات الشهر ${nf.format(c.conversations_month)}${c.monthly_limit ? ' / ' + nf.format(c.monthly_limit) : ''}`)),
     h('td', null, h('div', { class: 'row-actions' }, control)),
     h('td', null, h('div', { class: 'row-actions' }, h('button', { class: 'btn sm', type: 'button', on: { click: () => openClientDialog(c) } }, 'تعديل'))));
 }
@@ -694,6 +694,8 @@ function planPanel(p) {
   const name = h('input', { class: 'in', type: 'text', value: p ? p.name : '', maxlength: '80', placeholder: 'اسم الباقة' });
   const price = h('input', { class: 'in', type: 'number', min: '0', value: String(p ? p.price : 0) });
   const dur = h('input', { class: 'in', type: 'number', min: '1', max: '3650', value: String(p ? p.duration_days : 30) });
+  const setup = h('input', { class: 'in', type: 'number', min: '0', value: String(p ? p.setup_fee : 0) });
+  const limit = h('input', { class: 'in', type: 'number', min: '0', value: String(p ? p.monthly_limit : 0) });
   const active = switchBtn(p ? p.is_active : true, 'الباقة متاحة للاشتراك', async () => {});
   const feats = {};
   const rows = S.features.map(ft => {
@@ -706,7 +708,7 @@ function planPanel(p) {
     try {
       const features = {};
       for (const ft of S.features) features[ft.key] = feats[ft.key].getAttribute('aria-checked') === 'true';
-      await api('/plans', { method: 'POST', body: { key: key.value, name: name.value, price: Number(price.value), duration_days: Number(dur.value), features, is_active: active.getAttribute('aria-checked') === 'true' } });
+      await api('/plans', { method: 'POST', body: { key: key.value, name: name.value, price: Number(price.value), duration_days: Number(dur.value), setup_fee: Number(setup.value), monthly_limit: Number(limit.value), features, is_active: active.getAttribute('aria-checked') === 'true' } });
       toast(isNew ? 'تم إنشاء الباقة' : 'تم حفظ الباقة');
       S.plans = await api('/plans');
       route();
@@ -719,7 +721,8 @@ function planPanel(p) {
   return h('section', { class: 'plan' + (isNew ? ' new' : '') },
     h('h3', null, isNew ? 'باقة جديدة' : p.name, isNew ? null : h('span', { class: 'muted', style: 'font-size:13px;font-weight:400' }, `${nf.format(p.client_count)} مشترك`)),
     h('div', { class: 'two' }, h('label', { class: 'fld' }, 'الاسم', name), h('label', { class: 'fld' }, 'المعرّف', key)),
-    h('div', { class: 'two' }, h('label', { class: 'fld' }, `السعر (${cur})`, price), h('label', { class: 'fld' }, 'المدة بالأيام', dur)),
+    h('div', { class: 'two' }, h('label', { class: 'fld' }, `الاشتراك الشهري (${cur})`, price), h('label', { class: 'fld' }, 'المدة بالأيام', dur)),
+    h('div', { class: 'two' }, h('label', { class: 'fld' }, `رسم التركيب (${cur})`, setup), h('label', { class: 'fld' }, 'حد المحادثات شهرياً (0 = بلا حد)', limit)),
     h('div', { class: 'feat', style: 'border-top:0' }, h('div', { class: 't' }, h('span', null, 'متاحة للاشتراك'), h('small', null, 'الباقة المعطّلة لا تظهر عند إضافة مشترك جديد')), active),
     rows,
     h('div', { class: 'foot' }, save, del));
