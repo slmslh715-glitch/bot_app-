@@ -403,6 +403,7 @@ def valid_signature(raw_body):
 def receive_whatsapp():
     raw = request.get_data()
     if not valid_signature(raw):
+        log.warning("توقيع واتساب غير صالح: تحقق من META_APP_SECRET")
         return "forbidden", 403
 
     data = request.get_json(silent=True) or {}
@@ -418,6 +419,7 @@ def receive_whatsapp():
         phone_id_real = value["metadata"]["phone_number_id"]
         msg = str(message["text"]["body"])[:2000]
         num = message["from"]
+        log.info("رسالة واتساب واردة: phone_id=%s من=…%s", phone_id_real, str(num)[-4:])
 
         # الإيقاف العام لجميع البوتات
         if not bot_globally_enabled():
